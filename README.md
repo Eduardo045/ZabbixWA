@@ -609,7 +609,7 @@ docker exec waha env | grep -i waha
 ## ⚖️ Informações Legais
 
 Este software é distribuído sob a **Licença MIT**.  
-Veja [`LEGAL.md`](LEGAL.md) para informações completas sobre:
+Veja [`LEGAL.md`](zabbix-whatsapp/LEGAL.md) para informações completas sobre:
 
 - Licença MIT (texto completo)
 - **LGPD** — Lei nº 13.709/2018 (dados tratados, bases legais, medidas de segurança)
