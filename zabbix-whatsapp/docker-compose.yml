@@ -1,0 +1,54 @@
+services:
+  # ─── WAHA (WhatsApp HTTP API) ─────────────────────────────────────────────
+  # ATENÇÃO: gere o .env ANTES de subir pela primeira vez:
+  #   docker run --rm -v "$(pwd)":/app/env devlikeapro/waha init-waha /app/env
+  waha:
+    image: devlikeapro/waha:latest
+    container_name: waha
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    env_file:
+      - .env
+    volumes:
+      - waha_sessions:/app/.sessions
+    environment:
+      WHATSAPP_DEFAULT_ENGINE: WEBJS
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200m"
+        max-file: "3"
+
+  # ─── Zabbix-WhatsApp Integration ─────────────────────────────────────────
+  zabbix-whatsapp:
+    build: .
+    container_name: zabbix-whatsapp
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - waha
+    volumes:
+      - app_data:/app/data
+    environment:
+      PORT: "3000"
+      NODE_ENV: production
+      JWT_SECRET: "TROQUE-POR-UMA-CHAVE-SECRETA-LONGA-E-ALEATORIA"
+      WEBHOOK_TOKEN: ""
+      DB_PATH: /app/data/zabbix-whatsapp.db
+      QUEUE_INTERVAL_MS: "5000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200m"   # Máximo 200MB por arquivo de log do container
+        max-file: "3"       # Máximo 3 arquivos rotacionados = ~600MB total por container
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/webhook/zabbix/ping', r => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  waha_sessions:
+  app_data:

@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZabbixWA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<style>
+:root {
+  --bg:#080d14;--surface:#0e1521;--surface2:#141e2e;--border:#1e2d42;--border2:#253548;
+  --cyan:#00d4ff;--cyan-dim:rgba(0,212,255,0.12);--green:#00e676;--green-dim:rgba(0,230,118,0.12);
+  --yellow:#ffd740;--yellow-dim:rgba(255,215,64,0.12);--orange:#ff9100;--orange-dim:rgba(255,145,0,0.12);
+  --red:#ff1744;--red-dim:rgba(255,23,68,0.12);--text:#d0dce8;--text2:#7a90a8;--text3:#4a6070;
+  --font:'Outfit',sans-serif;--mono:'JetBrains Mono',monospace;--radius:8px;--sidebar-w:230px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;overflow-x:hidden}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 30% 60%,rgba(0,212,255,0.06) 0%,transparent 60%),var(--bg)}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:48px 40px;width:380px}
+.login-logo{text-align:center;margin-bottom:32px}.login-logo .icon{font-size:40px;color:var(--cyan);display:block;margin-bottom:8px}
+.login-logo h1{font-size:22px;font-weight:600;letter-spacing:-.5px}.login-logo p{color:var(--text2);font-size:12px;margin-top:4px}
+.form-group{margin-bottom:16px}
+.form-label{display:block;font-size:12px;font-weight:500;color:var(--text2);margin-bottom:6px;letter-spacing:.5px;text-transform:uppercase}
+.form-control{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;color:var(--text);font-family:var(--font);font-size:14px;outline:none;transition:border-color .15s}
+.form-control:focus{border-color:var(--cyan)}.form-control::placeholder{color:var(--text3)}
+select.form-control option{background:var(--surface2)}
+.form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%237a90a8'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:32px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border:none;border-radius:var(--radius);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;text-decoration:none}
+.btn-primary{background:var(--cyan);color:#00070d}.btn-primary:hover{background:#33ddff}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border2)}.btn-secondary:hover{background:var(--border)}
+.btn-danger{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,23,68,.2)}.btn-danger:hover{background:rgba(255,23,68,.25)}
+.btn-success{background:var(--green-dim);color:var(--green);border:1px solid rgba(0,230,118,.2)}.btn-success:hover{background:rgba(0,230,118,.25)}
+.btn-warning{background:var(--yellow-dim);color:var(--yellow);border:1px solid rgba(255,215,64,.2)}.btn-warning:hover{background:rgba(255,215,64,.25)}
+.btn-sm{padding:5px 10px;font-size:12px}.btn-icon{padding:6px 8px}.btn-full{width:100%;justify-content:center}
+.btn:disabled{opacity:.5;cursor:not-allowed}.btn-ghost{background:transparent;color:var(--text2);border:1px solid transparent}.btn-ghost:hover{background:var(--surface2);color:var(--text)}
+.app-layout{display:flex;min-height:100vh}
+.sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;overflow:hidden}
+.sidebar-header{padding:18px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.sidebar-header .logo-icon{color:var(--cyan);font-size:20px;flex-shrink:0}
+.sidebar-header .logo-text{font-size:14px;font-weight:600;white-space:nowrap}.sidebar-header .logo-sub{font-size:10px;color:var(--text2);white-space:nowrap}
+.sidebar-nav{flex:1;padding:10px 0;overflow-y:auto}
+.nav-section{padding:0 8px 10px}.nav-section-label{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--text3);padding:8px 8px 4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:6px;cursor:pointer;color:var(--text2);font-size:13px;font-weight:400;transition:all .12s;white-space:nowrap;margin-bottom:2px}
+.nav-item:hover{background:var(--surface2);color:var(--text)}.nav-item.active{background:var(--cyan-dim);color:var(--cyan)}
+.nav-item i{font-size:15px;flex-shrink:0;width:18px}.nav-badge{margin-left:auto;background:var(--red);color:white;border-radius:10px;font-size:10px;padding:1px 6px;font-family:var(--mono)}
+.sidebar-footer{padding:10px 8px;border-top:1px solid var(--border)}
+.user-info{display:flex;align-items:center;gap:8px;padding:8px;border-radius:6px;cursor:pointer}.user-info:hover{background:var(--surface2)}
+.user-avatar{width:28px;height:28px;background:var(--cyan-dim);border:1px solid rgba(0,212,255,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--cyan);font-size:12px;font-weight:600;flex-shrink:0}
+.user-name{font-size:13px;font-weight:500}.user-role{font-size:10px;color:var(--text2)}
+.main-content{margin-left:var(--sidebar-w);flex:1;min-height:100vh;display:flex;flex-direction:column}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.topbar-title{font-size:16px;font-weight:600}.topbar-actions{display:flex;align-items:center;gap:8px}
+.page-content{padding:24px;flex:1}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)}
+.card-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}.card-body{padding:20px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+.stat-card .stat-value{font-size:30px;font-weight:700;font-family:var(--mono);line-height:1}
+.stat-card .stat-label{font-size:12px;color:var(--text2);margin-top:6px;font-weight:500}
+.stat-card .stat-icon{font-size:22px;margin-bottom:10px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--text2);padding:10px 14px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+td{padding:11px 14px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}tr:hover td{background:rgba(255,255,255,.02)}
+.mono{font-family:var(--mono);font-size:12px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:500;font-family:var(--mono)}
+.badge-not_classified{background:rgba(100,116,139,.2);color:#94a3b8;border:1px solid rgba(100,116,139,.2)}
+.badge-information{background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.2)}
+.badge-warning{background:var(--yellow-dim);color:var(--yellow);border:1px solid rgba(255,215,64,.2)}
+.badge-average{background:var(--orange-dim);color:var(--orange);border:1px solid rgba(255,145,0,.2)}
+.badge-high{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,23,68,.2)}
+.badge-disaster{background:rgba(255,0,68,.2);color:#ff4d7d;border:1px solid rgba(255,0,68,.3);animation:pulse-disaster 1.5s infinite}
+@keyframes pulse-disaster{0%,100%{box-shadow:0 0 0 0 rgba(255,0,68,.3)}50%{box-shadow:0 0 0 4px rgba(255,0,68,0)}}
+.badge-pending{background:rgba(59,130,246,.12);color:#60a5fa;border:1px solid rgba(59,130,246,.2)}
+.badge-sent{background:var(--green-dim);color:var(--green);border:1px solid rgba(0,230,118,.2)}
+.badge-failed{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,23,68,.2)}
+.badge-held{background:var(--yellow-dim);color:var(--yellow);border:1px solid rgba(255,215,64,.2)}
+.badge-skipped{background:rgba(100,116,139,.15);color:#64748b;border:1px solid rgba(100,116,139,.2)}
+.badge-sending{background:var(--cyan-dim);color:var(--cyan);border:1px solid rgba(0,212,255,.2)}
+.badge-running,.badge-WORKING{background:var(--green-dim);color:var(--green);border:1px solid rgba(0,230,118,.2)}
+.badge-stopped{background:rgba(100,116,139,.15);color:#64748b;border:1px solid rgba(100,116,139,.2)}
+.badge-group{background:rgba(139,92,246,.12);color:#a78bfa;border:1px solid rgba(139,92,246,.2)}
+.badge-contact{background:var(--cyan-dim);color:var(--cyan);border:1px solid rgba(0,212,255,.2)}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}
+.dot-green{background:var(--green);box-shadow:0 0 6px var(--green)}.dot-red{background:var(--red)}.dot-yellow{background:var(--yellow)}.dot-gray{background:var(--text3)}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;width:100%;max-height:90vh;display:flex;flex-direction:column}
+.modal-sm{max-width:420px}.modal-md{max-width:580px}.modal-lg{max-width:760px}.modal-xl{max-width:960px}
+.modal-header{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-title{font-size:15px;font-weight:600}.modal-body{padding:24px;overflow-y:auto;flex:1}.modal-footer{padding:14px 24px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0}
+.btn-close{background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:18px;display:flex;align-items:center;padding:4px;border-radius:4px}.btn-close:hover{color:var(--text);background:var(--surface2)}
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:20px;gap:0}
+.tab{padding:9px 16px;cursor:pointer;color:var(--text2);font-size:13px;font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;white-space:nowrap}.tab:hover{color:var(--text)}.tab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+.check-item{display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px;transition:all .12s;user-select:none}.check-item:hover{border-color:var(--border2)}.check-item.checked{background:var(--cyan-dim);border-color:rgba(0,212,255,.3);color:var(--cyan)}.check-item input{display:none}
+.sev-not_classified.checked{background:rgba(100,116,139,.15);color:#94a3b8;border-color:rgba(100,116,139,.4)}
+.sev-information.checked{background:rgba(59,130,246,.12);color:#60a5fa;border-color:rgba(59,130,246,.3)}
+.sev-warning.checked{background:var(--yellow-dim);color:var(--yellow);border-color:rgba(255,215,64,.3)}
+.sev-average.checked{background:var(--orange-dim);color:var(--orange);border-color:rgba(255,145,0,.3)}
+.sev-high.checked{background:var(--red-dim);color:var(--red);border-color:rgba(255,23,68,.3)}
+.sev-disaster.checked{background:rgba(255,0,68,.15);color:#ff4d7d;border-color:rgba(255,0,68,.4)}
+.toggle{position:relative;width:36px;height:20px;display:inline-block;flex-shrink:0}
+.toggle input{display:none}.toggle-track{position:absolute;inset:0;background:var(--border);border-radius:10px;cursor:pointer;transition:background .2s}
+.toggle input:checked+.toggle-track{background:var(--cyan)}.toggle-track::after{content:'';position:absolute;width:16px;height:16px;background:white;border-radius:50%;top:2px;left:2px;transition:transform .2s}
+.toggle input:checked+.toggle-track::after{transform:translateX(16px)}
+.alert{padding:12px 16px;border-radius:var(--radius);font-size:13px;margin-bottom:16px}
+.alert-error{background:var(--red-dim);border:1px solid rgba(255,23,68,.3);color:#ff8fa3}
+.alert-success{background:var(--green-dim);border:1px solid rgba(0,230,118,.3);color:var(--green)}
+.alert-info{background:var(--cyan-dim);border:1px solid rgba(0,212,255,.3);color:var(--cyan)}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text2)}.empty-state i{font-size:36px;margin-bottom:10px;display:block;opacity:.4}.empty-state p{font-size:14px}
+.divider{height:1px;background:var(--border);margin:16px 0}
+.row{display:flex;gap:16px}.row>*{flex:1}
+.flex{display:flex}.flex-center{display:flex;align-items:center}.flex-between{display:flex;align-items:center;justify-content:space-between}
+.gap-2{gap:8px}.flex-col{flex-direction:column}.inline-flex{display:inline-flex;align-items:center;gap:6px}
+.text-center{text-align:center}.text-right{text-align:right}.text-danger{color:var(--red)}.text-success{color:var(--green)}.text-muted{color:var(--text2);font-size:12px}
+.mt-1{margin-top:4px}.mt-2{margin-top:8px}.mt-3{margin-top:16px}.mt-4{margin-top:24px}
+.mb-1{margin-bottom:4px}.mb-2{margin-bottom:8px}.mb-3{margin-bottom:16px}.mb-4{margin-bottom:24px}
+.code{font-family:var(--mono);font-size:12px;background:var(--surface2);padding:2px 6px;border-radius:4px;border:1px solid var(--border)}
+.actions-cell{display:flex;gap:4px;flex-wrap:wrap}
+.queue-paused-banner{background:rgba(255,215,64,.1);border:1px solid rgba(255,215,64,.3);border-radius:var(--radius);padding:10px 16px;display:flex;align-items:center;gap:8px;color:var(--yellow);font-size:13px;margin-bottom:16px}
+.severity-selector{display:flex;flex-wrap:wrap;gap:6px}
+.day-btn{padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;background:var(--surface2);border:1px solid var(--border);color:var(--text2);user-select:none;transition:all .12s}
+.day-btn.active{background:var(--cyan-dim);border-color:rgba(0,212,255,.3);color:var(--cyan)}
+.rule-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px}
+.tag-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;font-size:11px;font-family:var(--mono)}
+.tag-chip button{background:none;border:none;cursor:pointer;color:var(--text2);font-size:12px;padding:0;line-height:1}.tag-chip button:hover{color:var(--red)}
+.notice{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--cyan);border-radius:var(--radius);padding:12px 14px;font-size:12px;color:var(--text2)}
+.notice-yellow{border-left-color:var(--yellow)}.notice-red{border-left-color:var(--red)}.notice-green{border-left-color:var(--green)}
+.spin{animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.tag-color-dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex-shrink:0}
+.negate-badge{background:rgba(255,23,68,.15);color:var(--red);border:1px solid rgba(255,23,68,.3);padding:2px 7px;border-radius:4px;font-size:10px;font-family:var(--mono);font-weight:700}
+.ignore-sev-badge{background:var(--yellow-dim);color:var(--yellow);border:1px solid rgba(255,215,64,.3);padding:2px 7px;border-radius:4px;font-size:10px;font-family:var(--mono)}
+.notify-all-pill{background:rgba(0,212,255,.15);color:var(--cyan);border:1px solid rgba(0,212,255,.3);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- LOGIN -->
+  <div v-if="!auth.token" class="login-wrap">
+    <div class="login-card">
+      <div class="login-logo">
+        <i class="bi bi-broadcast icon"></i>
+        <h1>ZabbixWA</h1>
+        <p>Sistema de Notificações via WAHA</p>
+        <p style="margin-top:8px;font-size:11px;color:var(--text3);">Desenvolvido por <strong style="color:var(--text2)">Eduardo Fontoura</strong></p>
+      </div>
+      <div v-if="loginError" class="alert alert-error">{{ loginError }}</div>
+      <div class="form-group">
+        <label class="form-label">Usuário</label>
+        <input v-model="loginForm.username" class="form-control" placeholder="admin" @keyup.enter="login">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Senha</label>
+        <input v-model="loginForm.password" type="password" class="form-control" placeholder="••••••••" @keyup.enter="login">
+      </div>
+      <button class="btn btn-primary btn-full mt-3" @click="login" :disabled="loading.login">
+        <i v-if="loading.login" class="bi bi-arrow-repeat spin"></i>
+        <i v-else class="bi bi-box-arrow-in-right"></i>Entrar
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div v-else class="app-layout">
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <i class="bi bi-broadcast logo-icon"></i>
+        <div><div class="logo-text">ZabbixWA</div><div class="logo-sub">v1.3.0 — Monitor NOC</div></div>
+      </div>
+      <div class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-label">Geral</div>
+          <div class="nav-item" :class="{active:page==='dashboard'}" @click="nav('dashboard')"><i class="bi bi-grid-1x2"></i> Dashboard</div>
+          <div class="nav-item" :class="{active:page==='logs'}" @click="nav('logs')"><i class="bi bi-journal-text"></i> Histórico</div>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-label">WhatsApp</div>
+          <div class="nav-item" :class="{active:page==='sessions'}" @click="nav('sessions')"><i class="bi bi-phone"></i> Sessões WAHA</div>
+          <div class="nav-item" :class="{active:page==='destinations'}" @click="nav('destinations')"><i class="bi bi-send"></i> Destinos</div>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-label">Alertas</div>
+          <div class="nav-item" :class="{active:page==='queue'}" @click="nav('queue')">
+            <i class="bi bi-collection"></i> Fila
+            <span v-if="queueStats.pending>0" class="nav-badge">{{queueStats.pending}}</span>
+          </div>
+          <div class="nav-item" :class="{active:page==='mappings'}" @click="nav('mappings')"><i class="bi bi-person-check"></i> TAGs → Menções</div>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-label">Configuração</div>
+          <div class="nav-item" :class="{active:page==='globalTags'}" @click="nav('globalTags')"><i class="bi bi-tags"></i> Cadastro de TAGs</div>
+          <div class="nav-item" v-if="auth.user?.role==='admin'" :class="{active:page==='users'}" @click="nav('users')"><i class="bi bi-people"></i> Usuários</div>
+          <div class="nav-item" v-if="auth.user?.role==='admin'" :class="{active:page==='settings'}" @click="nav('settings')"><i class="bi bi-gear"></i> Configurações</div>
+        </div>
+      </div>
+      <div class="sidebar-footer">
+        <div class="user-info" @click="nav('password')">
+          <div class="user-avatar">{{ (auth.user?.username||'?')[0].toUpperCase() }}</div>
+          <div><div class="user-name">{{ auth.user?.username }}</div><div class="user-role">{{ auth.user?.role }}</div></div>
+          <i class="bi bi-box-arrow-right" style="margin-left:auto;color:var(--text3);font-size:14px;" @click.stop="logout" title="Sair"></i>
+        </div>
+        <div style="padding:6px 8px 2px;text-align:center;"><span style="font-size:9px;color:var(--text3);">ZabbixWA v1.3.0 &nbsp;·&nbsp; por <span style="color:var(--text2);">Eduardo Fontoura</span></span></div>
+      </div>
+    </nav>
+
+    <div class="main-content">
+      <div class="topbar">
+        <div class="topbar-title">{{ pageTitle }}</div>
+        <div class="topbar-actions">
+          <div v-if="queueStats.paused" style="display:flex;align-items:center;gap:6px;color:var(--yellow);font-size:12px;"><span class="dot dot-yellow"></span> Fila pausada</div>
+          <span style="font-size:12px;color:var(--text3);">{{ now }}</span>
+        </div>
+      </div>
+
+      <div class="page-content">
+
+        <!-- DASHBOARD -->
+        <div v-if="page==='dashboard'">
+          <div class="grid-4 mb-4">
+            <div class="stat-card"><i class="bi bi-collection stat-icon" style="color:var(--cyan)"></i><div class="stat-value" style="color:var(--cyan)">{{ queueStats.pending||0 }}</div><div class="stat-label">Na Fila</div></div>
+            <div class="stat-card"><i class="bi bi-check-circle stat-icon" style="color:var(--green)"></i><div class="stat-value" style="color:var(--green)">{{ dashboard.queueStats?.sent||0 }}</div><div class="stat-label">Enviados</div></div>
+            <div class="stat-card"><i class="bi bi-exclamation-triangle stat-icon" style="color:var(--red)"></i><div class="stat-value" style="color:var(--red)">{{ dashboard.queueStats?.failed||0 }}</div><div class="stat-label">Falhas</div></div>
+            <div class="stat-card"><i class="bi bi-send stat-icon" style="color:var(--yellow)"></i><div class="stat-value" style="color:var(--yellow)">{{ dashboard.destinationsCount||0 }}</div><div class="stat-label">Destinos Ativos</div></div>
+          </div>
+          <div class="grid-2 mb-4">
+            <div class="stat-card" style="display:flex;align-items:center;gap:16px;padding:14px 18px;">
+              <i class="bi bi-database" style="font-size:28px;color:var(--text3)"></i>
+              <div>
+                <div style="font-size:12px;color:var(--text2);margin-bottom:4px">Registros no banco</div>
+                <div style="font-size:13px"><span class="mono">{{dashboard.logTotalRows||0}}</span> logs &nbsp;·&nbsp; <span class="mono">{{dashboard.queueTotalRows||0}}</span> fila</div>
+              </div>
+            </div>
+            <div class="stat-card" style="display:flex;align-items:center;gap:16px;padding:14px 18px;">
+              <i class="bi bi-phone" style="font-size:28px;color:var(--text3)"></i>
+              <div>
+                <div style="font-size:12px;color:var(--text2);margin-bottom:4px">Sessões · Mapeamentos</div>
+                <div style="font-size:13px"><span class="mono">{{dashboard.sessionsCount||0}}</span> sessões &nbsp;·&nbsp; <span class="mono">{{dashboard.mappingsCount||0}}</span> mapeamentos</div>
+              </div>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header"><div class="card-title"><i class="bi bi-clock-history"></i> Alertas Recentes</div><button class="btn btn-ghost btn-sm" @click="loadDashboard"><i class="bi bi-arrow-repeat"></i></button></div>
+              <div class="table-wrap"><table><thead><tr><th>Severidade</th><th>Host</th><th>Status</th><th>Hora</th></tr></thead><tbody>
+                <tr v-for="a in (dashboard.recentAlerts||[]).slice(0,10)" :key="a.id">
+                  <td><span :class="'badge badge-'+a.severity">{{a.severity}}</span></td>
+                  <td class="mono">{{a.hostname}}</td>
+                  <td><span :class="'badge badge-'+a.status">{{a.status}}</span></td>
+                  <td class="mono" style="color:var(--text2);font-size:11px">{{fmtDate(a.created_at)}}</td>
+                </tr>
+                <tr v-if="!dashboard.recentAlerts?.length"><td colspan="4" class="text-center text-muted">Sem alertas recentes</td></tr>
+              </tbody></table></div>
+            </div>
+            <div class="card">
+              <div class="card-header"><div class="card-title"><i class="bi bi-bar-chart"></i> Por Severidade (24h)</div></div>
+              <div class="card-body">
+                <div v-for="item in (dashboard.alertsBySeverity||[])" :key="item.severity" style="margin-bottom:12px">
+                  <div class="flex-between mb-1"><span :class="'badge badge-'+item.severity">{{item.severity}}</span><span class="mono" style="font-size:12px">{{item.count}}</span></div>
+                  <div style="background:var(--surface2);border-radius:4px;height:6px;overflow:hidden"><div :style="{width:Math.min(100,item.count/Math.max(...(dashboard.alertsBySeverity||[{count:1}]).map(x=>x.count))*100)+'%',height:'100%',background:'var(--cyan)',borderRadius:'4px',transition:'width .5s'}"></div></div>
+                </div>
+                <div v-if="!dashboard.alertsBySeverity?.length" class="empty-state" style="padding:20px"><i class="bi bi-bar-chart"></i><p>Sem dados</p></div>
+              </div>
+            </div>
+          </div>
+          <div class="card mt-4"><div class="card-header"><div class="card-title"><i class="bi bi-link-45deg"></i> Webhook URL</div></div>
+            <div class="card-body"><div class="notice"><strong>Configure no Zabbix:</strong><br><code class="code" style="display:inline-block;margin-top:8px">{{ location.origin }}/api/webhook/zabbix</code></div></div>
+          </div>
+        </div>
+
+        <!-- SESSIONS -->
+        <div v-if="page==='sessions'">
+          <div class="flex-between mb-3"><div></div><button class="btn btn-primary" @click="openSessionModal()"><i class="bi bi-plus-lg"></i> Nova Sessão</button></div>
+          <div class="card"><div class="table-wrap"><table>
+            <thead><tr><th>Nome</th><th>API URL</th><th>Sessão</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody>
+              <tr v-for="s in sessions" :key="s.id">
+                <td><strong>{{s.name}}</strong></td><td class="mono" style="font-size:11px">{{s.api_url}}</td><td class="mono">{{s.session_name}}</td>
+                <td><span :class="'badge badge-'+(s.status==='WORKING'||s.status==='running'?'running':'stopped')"><span :class="'dot '+(s.status==='WORKING'||s.status==='running'?'dot-green':'dot-gray')"></span>{{s.status||'unknown'}}</span></td>
+                <td><div class="actions-cell">
+                  <button class="btn btn-success btn-sm" @click="startSession(s)" title="Iniciar"><i class="bi bi-play-fill"></i></button>
+                  <button class="btn btn-warning btn-sm" @click="stopSession(s)" title="Parar"><i class="bi bi-stop-fill"></i></button>
+                  <button class="btn btn-secondary btn-sm" @click="checkSessionStatus(s)"><i class="bi bi-arrow-repeat"></i></button>
+                  <button class="btn btn-secondary btn-sm" @click="openSessionModal(s)"><i class="bi bi-pencil"></i></button>
+                  <button class="btn btn-danger btn-sm" @click="deleteSession(s)"><i class="bi bi-trash"></i></button>
+                </div></td>
+              </tr>
+              <tr v-if="!sessions.length"><td colspan="5"><div class="empty-state"><i class="bi bi-phone"></i><p>Nenhuma sessão</p></div></td></tr>
+            </tbody>
+          </table></div></div>
+        </div>
+
+        <!-- DESTINATIONS -->
+        <div v-if="page==='destinations'">
+          <div class="flex-between mb-3"><div></div><button class="btn btn-primary" @click="openDestModal()"><i class="bi bi-plus-lg"></i> Novo Destino</button></div>
+          <div class="card"><div class="table-wrap"><table>
+            <thead><tr><th>Nome</th><th>Tipo</th><th>Chat ID</th><th>Sessão</th><th>Regras</th><th>Notif.Todos</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody>
+              <tr v-for="d in destinations" :key="d.id">
+                <td><strong>{{d.name}}</strong></td>
+                <td><span :class="'badge badge-'+d.type">{{d.type==='group'?'👥 Grupo':'👤 Contato'}}</span></td>
+                <td class="mono" style="font-size:10px">{{d.chat_id}}</td>
+                <td>{{d.session?.name||'—'}}</td>
+                <td style="font-size:11px;color:var(--text2)">
+                  <span v-if="d.severity_filters?.length">{{d.severity_filters.length}} sev.</span>
+                  <span v-if="d.tag_filters?.length" style="margin-left:4px">{{d.tag_filters.length}} tags</span>
+                  <span v-if="d.schedules?.length" style="margin-left:4px">{{d.schedules.length}} hor.</span>
+                  <span v-if="!d.severity_filters?.length&&!d.tag_filters?.length&&!d.schedules?.length" style="color:var(--green)">Todos</span>
+                </td>
+                <td><span v-if="d.notify_all_enabled" class="notify-all-pill"><i class="bi bi-megaphone"></i> Ativo</span><span v-else style="font-size:11px;color:var(--text3)">—</span></td>
+                <td><label class="toggle"><input type="checkbox" :checked="d.active" @change="toggleDest(d)"><span class="toggle-track"></span></label></td>
+                <td><div class="actions-cell">
+                  <button class="btn btn-secondary btn-sm" @click="openDestDetail(d)" title="Regras e horários"><i class="bi bi-sliders"></i></button>
+                  <button class="btn btn-secondary btn-sm" @click="openDestModal(d)"><i class="bi bi-pencil"></i></button>
+                  <button class="btn btn-danger btn-sm" @click="deleteDest(d)"><i class="bi bi-trash"></i></button>
+                </div></td>
+              </tr>
+              <tr v-if="!destinations.length"><td colspan="8"><div class="empty-state"><i class="bi bi-send"></i><p>Nenhum destino</p></div></td></tr>
+            </tbody>
+          </table></div></div>
+        </div>
+
+        <!-- QUEUE -->
+        <div v-if="page==='queue'">
+          <div v-if="queueStats.paused" class="queue-paused-banner"><i class="bi bi-pause-circle-fill"></i><strong>Fila pausada</strong> — Nenhuma mensagem está sendo enviada</div>
+          <div class="grid-4 mb-4">
+            <div class="stat-card" v-for="(count,status) in {pending:queueStats.pending,held:queueStats.held,failed:queueStats.failed,sent:queueStats.sent}" :key="status">
+              <div :class="'stat-value badge-'+status" style="font-family:var(--mono);font-size:26px;">{{count||0}}</div>
+              <div class="stat-label mt-2">{{({pending:'Pendente',held:'Retido',failed:'Falha',sent:'Enviado'})[status]}}</div>
+            </div>
+          </div>
+          <div class="card mb-4"><div class="card-header"><div class="card-title"><i class="bi bi-terminal"></i> Comandos</div></div>
+            <div class="card-body"><div style="display:flex;flex-wrap:wrap;gap:8px">
+              <button class="btn btn-success" @click="resumeQueue" v-if="queueStats.paused"><i class="bi bi-play-fill"></i> Retomar</button>
+              <button class="btn btn-warning" @click="pauseQueue" v-else><i class="bi bi-pause-fill"></i> Pausar</button>
+              <button class="btn btn-secondary" @click="retryFailed"><i class="bi bi-arrow-repeat"></i> Retentar Falhas ({{queueStats.failed||0}})</button>
+              <button class="btn btn-secondary" @click="clearFailed"><i class="bi bi-x-circle"></i> Limpar Falhas</button>
+              <button class="btn btn-danger" @click="flushQueue"><i class="bi bi-trash"></i> Limpar Pendentes</button>
+              <button class="btn btn-secondary" @click="clearSent"><i class="bi bi-archive"></i> Limpar Enviados</button>
+              <button class="btn btn-ghost" @click="loadQueue"><i class="bi bi-arrow-repeat"></i> Atualizar</button>
+            </div></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><i class="bi bi-collection"></i> Itens na Fila</div>
+              <div style="display:flex;gap:8px">
+                <select v-model="queueFilter.status" class="form-control form-select" style="width:130px" @change="loadQueue">
+                  <option value="">Todos</option>
+                  <option v-for="s in ['pending','held','sending','sent','failed','skipped']" :key="s" :value="s">{{s}}</option>
+                </select>
+                <select v-model="queueFilter.destination_id" class="form-control form-select" style="width:150px" @change="loadQueue">
+                  <option value="">Todos destinos</option>
+                  <option v-for="d in destinations" :key="d.id" :value="d.id">{{d.name}}</option>
+                </select>
+              </div>
+            </div>
+            <div class="table-wrap"><table><thead><tr><th>ID</th><th>Host</th><th>Severidade</th><th>Destino</th><th>Status</th><th>Criado</th><th>Enviar em</th><th>Ações</th></tr></thead>
+              <tbody>
+                <tr v-for="item in queueItems" :key="item.id">
+                  <td class="mono" style="font-size:11px;color:var(--text2)">#{{item.id}}</td>
+                  <td class="mono">{{parseAlert(item.alert_data).hostname}}</td>
+                  <td><span :class="'badge badge-'+parseAlert(item.alert_data).severity">{{parseAlert(item.alert_data).severity}}</span></td>
+                  <td>{{item.destination_name}}</td>
+                  <td><span :class="'badge badge-'+item.status">{{item.status}}</span><span v-if="item.error_message" :title="item.error_message" style="margin-left:4px;cursor:help;color:var(--red)">⚠️</span></td>
+                  <td class="mono" style="font-size:11px;color:var(--text2)">{{fmtDate(item.created_at)}}</td>
+                  <td class="mono" style="font-size:11px;color:var(--text2)">{{fmtDate(item.scheduled_at)}}</td>
+                  <td><div class="actions-cell">
+                    <button v-if="['pending','held','failed'].includes(item.status)" class="btn btn-success btn-sm" @click="forceQueue(item)" title="Forçar envio"><i class="bi bi-send-fill"></i></button>
+                    <button class="btn btn-danger btn-sm" @click="deleteQueueItem(item)"><i class="bi bi-trash"></i></button>
+                  </div></td>
+                </tr>
+                <tr v-if="!queueItems.length"><td colspan="8"><div class="empty-state"><i class="bi bi-collection"></i><p>Fila vazia</p></div></td></tr>
+              </tbody>
+            </table></div>
+          </div>
+        </div>
+
+        <!-- TAG MAPPINGS (Menções) -->
+        <div v-if="page==='mappings'">
+          <div class="flex-between mb-3"><div></div><button class="btn btn-primary" @click="openMappingModal()"><i class="bi bi-plus-lg"></i> Novo Mapeamento</button></div>
+          <div class="notice mb-3">Mapeia TAGs do Zabbix para números de telefone para menção em grupos. O campo <strong>Valor da TAG</strong> aceita múltiplos valores separados por vírgula — cada um representa uma pessoa diferente.</div>
+          <div class="card"><div class="table-wrap"><table>
+            <thead><tr><th>TAG (nome)</th><th>Valor(es) da TAG</th><th>Telefone</th><th>Descrição</th><th>Ações</th></tr></thead>
+            <tbody>
+              <tr v-for="m in mappings" :key="m.id">
+                <td class="mono">{{m.tag_name}}</td>
+                <td>
+                  <span v-for="v in m.tag_value.split(',')" :key="v" class="tag-chip" style="margin-right:4px">{{v.trim()}}</span>
+                </td>
+                <td class="mono">{{fmtPhone(m.phone_number)}}</td>
+                <td style="color:var(--text2)">{{m.description||'—'}}</td>
+                <td><div class="actions-cell">
+                  <button class="btn btn-secondary btn-sm" @click="openMappingModal(m)"><i class="bi bi-pencil"></i></button>
+                  <button class="btn btn-danger btn-sm" @click="deleteMapping(m)"><i class="bi bi-trash"></i></button>
+                </div></td>
+              </tr>
+              <tr v-if="!mappings.length"><td colspan="5"><div class="empty-state"><i class="bi bi-person-check"></i><p>Nenhum mapeamento</p></div></td></tr>
+            </tbody>
+          </table></div></div>
+        </div>
+
+        <!-- GLOBAL TAGS -->
+        <div v-if="page==='globalTags'">
+          <div class="flex-between mb-3">
+            <div>
+              <div style="font-size:13px;color:var(--text2)">Cadastro global de TAGs disponíveis para seleção nos destinos, horários e filtros do sistema.</div>
+            </div>
+            <button class="btn btn-primary" @click="openGlobalTagModal()"><i class="bi bi-plus-lg"></i> Nova TAG</button>
+          </div>
+          <div class="card"><div class="table-wrap"><table>
+            <thead><tr><th>Cor</th><th>Nome</th><th>Descrição</th><th>Ações</th></tr></thead>
+            <tbody>
+              <tr v-for="t in globalTags" :key="t.id">
+                <td><span class="tag-color-dot" :style="{background:t.color,boxShadow:'0 0 6px '+t.color+'66'}"></span></td>
+                <td><span class="tag-chip" :style="{'border-color':t.color+'55','color':t.color,'background':t.color+'18'}">{{t.name}}</span></td>
+                <td style="color:var(--text2)">{{t.description||'—'}}</td>
+                <td><div class="actions-cell">
+                  <button class="btn btn-secondary btn-sm" @click="openGlobalTagModal(t)"><i class="bi bi-pencil"></i></button>
+                  <button class="btn btn-danger btn-sm" @click="deleteGlobalTag(t)"><i class="bi bi-trash"></i></button>
+                </div></td>
+              </tr>
+              <tr v-if="!globalTags.length"><td colspan="4"><div class="empty-state"><i class="bi bi-tags"></i><p>Nenhuma TAG cadastrada</p></div></td></tr>
+            </tbody>
+          </table></div></div>
+        </div>
+
+        <!-- USERS -->
+        <div v-if="page==='users'">
+          <div class="flex-between mb-3"><div></div><button class="btn btn-primary" @click="openUserModal()"><i class="bi bi-plus-lg"></i> Novo Usuário</button></div>
+          <div class="card"><div class="table-wrap"><table>
+            <thead><tr><th>Usuário</th><th>Perfil</th><th>Status</th><th>Criado em</th><th>Ações</th></tr></thead>
+            <tbody>
+              <tr v-for="u in users" :key="u.id">
+                <td><strong>{{u.username}}</strong></td>
+                <td><span :class="u.role==='admin'?'badge badge-disaster':'badge badge-information'">{{u.role}}</span></td>
+                <td><span :class="u.active?'badge badge-running':'badge badge-stopped'">{{u.active?'Ativo':'Inativo'}}</span></td>
+                <td class="mono" style="font-size:11px;color:var(--text2)">{{fmtDate(u.created_at)}}</td>
+                <td><div class="actions-cell">
+                  <button class="btn btn-secondary btn-sm" @click="openPwModal(u)"><i class="bi bi-key"></i></button>
+                  <button class="btn btn-secondary btn-sm" @click="openUserModal(u)"><i class="bi bi-pencil"></i></button>
+                  <button class="btn btn-danger btn-sm" @click="deleteUser(u)" :disabled="u.id===auth.user?.id"><i class="bi bi-trash"></i></button>
+                </div></td>
+              </tr>
+            </tbody>
+          </table></div></div>
+        </div>
+
+        <!-- LOGS -->
+        <div v-if="page==='logs'">
+          <div class="flex-between mb-3">
+            <div style="display:flex;gap:8px">
+              <select v-model="logFilter.severity" class="form-control form-select" style="width:140px" @change="loadLogs">
+                <option value="">Todas severidades</option>
+                <option v-for="s in severities" :key="s" :value="s">{{s}}</option>
+              </select>
+              <select v-model="logFilter.status" class="form-control form-select" style="width:140px" @change="loadLogs">
+                <option value="">Todos status</option>
+                <option v-for="s in ['sent','skipped_schedule','failed']" :key="s" :value="s">{{s}}</option>
+              </select>
+            </div>
+            <button class="btn btn-ghost" @click="loadLogs"><i class="bi bi-arrow-repeat"></i> Atualizar</button>
+          </div>
+          <div class="card"><div class="table-wrap"><table>
+            <thead><tr><th>Hora</th><th>Host</th><th>Severidade</th><th>Destino</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr v-for="l in logs" :key="l.id">
+                <td class="mono" style="font-size:11px;color:var(--text2)">{{fmtDate(l.created_at)}}</td>
+                <td class="mono">{{l.hostname}}</td>
+                <td><span :class="'badge badge-'+l.severity">{{l.severity}}</span></td>
+                <td>{{l.destination_name||'—'}}</td>
+                <td><span :class="'badge badge-'+(l.status==='sent'?'sent':l.status==='failed'?'failed':'skipped')">{{l.status}}</span></td>
+              </tr>
+              <tr v-if="!logs.length"><td colspan="5"><div class="empty-state"><i class="bi bi-journal-text"></i><p>Sem registros</p></div></td></tr>
+            </tbody>
+          </table></div></div>
+        </div>
+
+        <!-- SETTINGS -->
+        <div v-if="page==='settings'">
+          <div class="grid-2 mb-3">
+            <div class="card">
+              <div class="card-header"><div class="card-title"><i class="bi bi-sliders"></i> Fila de Alertas</div></div>
+              <div class="card-body">
+                <div class="form-group"><label class="form-label">Rate limit (mensagens por janela)</label><input v-model="settingsForm.queue_rate_limit" type="number" class="form-control" min="1"></div>
+                <div class="form-group"><label class="form-label">Janela de tempo (ms)</label><input v-model="settingsForm.queue_rate_window_ms" type="number" class="form-control"></div>
+                <div class="form-group"><label class="form-label">Intervalo do processador (ms)</label><input v-model="settingsForm.queue_interval_ms" type="number" class="form-control"></div>
+                <div class="form-group"><label class="form-label">Máximo de tentativas</label><input v-model="settingsForm.max_retries" type="number" class="form-control" min="1"></div>
+                <div class="form-group"><label class="form-label">Janela de deduplicação (min)</label><input v-model="settingsForm.dedup_window_minutes" type="number" class="form-control" min="0"></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header"><div class="card-title"><i class="bi bi-database"></i> Limite de Logs</div></div>
+              <div class="card-body">
+                <div class="notice mb-3">Controla o crescimento do banco de dados. A limpeza automática ocorre a cada hora. Logs Docker são rotacionados pelo Docker (máx. ~600MB por container, configurado no <code class="code">docker-compose.yml</code>).</div>
+                <div class="form-group"><label class="form-label">Máximo de registros em alert_logs</label><input v-model="settingsForm.log_max_rows" type="number" class="form-control" min="1000"><div class="text-muted mt-1">Registros mais antigos são removidos quando exceder</div></div>
+                <div class="form-group"><label class="form-label">Retenção de logs (dias)</label><input v-model="settingsForm.log_retention_days" type="number" class="form-control" min="1"><div class="text-muted mt-1">Logs mais velhos que este período são removidos</div></div>
+                <div class="form-group"><label class="form-label">Máximo de itens enviados na fila</label><input v-model="settingsForm.queue_max_sent_rows" type="number" class="form-control" min="100"><div class="text-muted mt-1">Itens com status sent/skipped são removidos quando exceder</div></div>
+                <button class="btn btn-secondary btn-sm" @click="runCleanup"><i class="bi bi-trash"></i> Executar limpeza agora</button>
+              </div>
+            </div>
+          </div>
+          <div class="card mb-3">
+            <div class="card-header"><div class="card-title"><i class="bi bi-shield-lock"></i> Segurança</div></div>
+            <div class="card-body">
+              <div class="form-group"><label class="form-label">Token do Webhook (opcional)</label><input v-model="settingsForm.webhook_token" class="form-control" placeholder="Deixe vazio para desativar"><div class="text-muted mt-1">Se definido, adicione <code class="code">?token=TOKEN</code> na URL do webhook</div></div>
+              <div class="notice mt-2"><strong>URL do Webhook:</strong><br><code class="code" style="display:block;margin-top:6px;word-break:break-all">{{ location.origin }}/api/webhook/zabbix</code></div>
+            </div>
+          </div>
+          <div class="text-right"><button class="btn btn-primary" @click="saveSettings"><i class="bi bi-check-lg"></i> Salvar Configurações</button></div>
+        </div>
+
+        <!-- PASSWORD -->
+        <div v-if="page==='password'">
+          <div style="max-width:420px">
+            <div class="card"><div class="card-header"><div class="card-title"><i class="bi bi-key"></i> Alterar Senha</div></div>
+              <div class="card-body">
+                <div v-if="pwChangeSuccess" class="alert alert-success">Senha alterada!</div>
+                <div v-if="pwChangeError" class="alert alert-error">{{pwChangeError}}</div>
+                <div class="form-group" v-if="auth.user?.role!=='admin'"><label class="form-label">Senha Atual</label><input v-model="selfPw.currentPassword" type="password" class="form-control"></div>
+                <div class="form-group"><label class="form-label">Nova Senha</label><input v-model="selfPw.newPassword" type="password" class="form-control"></div>
+                <button class="btn btn-primary btn-full mt-2" @click="changeSelfPw"><i class="bi bi-check-lg"></i> Alterar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- page-content -->
+    </div><!-- main-content -->
+  </div><!-- app-layout -->
+
+  <!-- ═══ MODALS ═══════════════════════════════════════════════════════════ -->
+
+  <!-- Session Modal -->
+  <div v-if="showSessionModal" class="modal-backdrop" @click.self="showSessionModal=false">
+    <div class="modal modal-md">
+      <div class="modal-header"><div class="modal-title">{{sessionForm.id?'Editar':'Nova'}} Sessão WAHA</div><button class="btn-close" @click="showSessionModal=false"><i class="bi bi-x-lg"></i></button></div>
+      <div class="modal-body">
+        <div class="form-group"><label class="form-label">Nome *</label><input v-model="sessionForm.name" class="form-control" placeholder="ex: Principal"></div>
+        <div class="form-group"><label class="form-label">URL da API WAHA *</label><input v-model="sessionForm.api_url" class="form-control" placeholder="http://waha:3000"></div>
+        <div class="form-group"><label class="form-label">API Key</label><input v-model="sessionForm.api_key" class="form-control" placeholder="do arquivo .env do WAHA"></div>
+        <div class="form-group"><label class="form-label">Nome da Sessão</label><input v-model="sessionForm.session_name" class="form-control" placeholder="default"></div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-secondary" @click="showSessionModal=false">Cancelar</button><button class="btn btn-primary" @click="saveSession"><i class="bi bi-check-lg"></i> Salvar</button></div>
+    </div>
+  </div>
+
+  <!-- Destination Modal -->
+  <div v-if="showDestModal" class="modal-backdrop" @click.self="showDestModal=false">
+    <div class="modal modal-md">
+      <div class="modal-header"><div class="modal-title">{{destForm.id?'Editar':'Novo'}} Destino</div><button class="btn-close" @click="showDestModal=false"><i class="bi bi-x-lg"></i></button></div>
+      <div class="modal-body">
+        <div class="form-group"><label class="form-label">Nome *</label><input v-model="destForm.name" class="form-control" placeholder="ex: NOC Principal"></div>
+        <div class="row">
+          <div class="form-group"><label class="form-label">Tipo</label>
+            <select v-model="destForm.type" class="form-control form-select"><option value="group">👥 Grupo</option><option value="contact">👤 Contato</option></select>
+          </div>
+          <div class="form-group"><label class="form-label">Sessão WAHA</label>
+            <select v-model="destForm.waha_session_id" class="form-control form-select"><option :value="null">— selecione —</option><option v-for="s in sessions" :key="s.id" :value="s.id">{{s.name}}</option></select>
+          </div>
+        </div>
+        <div class="form-group"><label class="form-label">Chat ID *</label>
+          <input v-model="destForm.chat_id" class="form-control" :placeholder="destForm.type==='group'?'5511999999999@g.us':'5511999999999@c.us'">
+          <div class="text-muted mt-1">Grupos: xxxxx@g.us | Contatos: número@c.us</div>
+        </div>
+        <div class="divider"></div>
+        <div class="flex-center gap-2 mb-2">
+          <label class="toggle"><input type="checkbox" v-model="destForm.notify_all_enabled"><span class="toggle-track"></span></label>
+          <div>
+            <div style="font-size:13px;font-weight:500">📢 Notificar Todos (notificar-todos=1)</div>
+            <div class="text-muted">Quando ativo e o alerta tiver a TAG <code class="code">notificar-todos=1</code>, menciona todos do grupo — ignora demais filtros</div>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="flex-center gap-2">
+          <label class="toggle"><input type="checkbox" v-model="destForm.active"><span class="toggle-track"></span></label>
+          <span style="font-size:13px">Destino ativo</span>
+        </div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-secondary" @click="showDestModal=false">Cancelar</button><button class="btn btn-primary" @click="saveDest"><i class="bi bi-check-lg"></i> Salvar</button></div>
+    </div>
+  </div>
+
+  <!-- Destination Detail Modal (Rules) -->
+  <div v-if="showDestDetailModal&&selectedDest" class="modal-backdrop" @click.self="showDestDetailModal=false">
+    <div class="modal modal-xl">
+      <div class="modal-header"><div class="modal-title"><i class="bi bi-sliders"></i> {{selectedDest.name}} — Regras de Envio</div><button class="btn-close" @click="showDestDetailModal=false"><i class="bi bi-x-lg"></i></button></div>
+      <div class="modal-body">
+
+        <div class="notice mb-3">
+          <strong>Ordem de verificação das regras:</strong><br>
+          <span style="color:var(--cyan)"><strong>Regra 1</strong></span> — notificar-todos: se ativo e TAG presente → envia para todos, ignora demais regras.<br>
+          <span style="color:var(--yellow)"><strong>Regra 2</strong></span> — Horário + TAG: verifica se o alerta pode ser enviado agora (com filtro de TAG opcional por regra).<br>
+          <span style="color:var(--orange)"><strong>Regra 3</strong></span> — TAGs + Severidade: filtra por TAG com opção de ignorar severidade (<strong>!</strong>).
+        </div>
+
+        <div class="tabs">
+          <div class="tab" :class="{active:destDetailTab==='severity'}" @click="destDetailTab='severity'">🔴 Severidade</div>
+          <div class="tab" :class="{active:destDetailTab==='tags'}" @click="destDetailTab='tags'">🏷️ Regra 3 — TAGs</div>
+          <div class="tab" :class="{active:destDetailTab==='schedules'}" @click="destDetailTab='schedules'">⏰ Regra 2 — Horários</div>
+          <div class="tab" :class="{active:destDetailTab==='mentions'}" @click="destDetailTab='mentions'">👤 Menções</div>
+        </div>
+
+        <!-- Severity -->
+        <div v-if="destDetailTab==='severity'">
+          <div class="notice mb-3">Selecione as severidades que este destino deve receber. Se nenhuma, recebe todas. Este filtro é respeitado pela Regra 3 — salvo se a TAG estiver marcada com <strong>!</strong> (ignora severidade).</div>
+          <div class="severity-selector">
+            <label v-for="sev in severities" :key="sev" class="check-item" :class="['sev-'+sev, destSeverityFilters.includes(sev)?'checked':'']">
+              <input type="checkbox" :value="sev" v-model="destSeverityFilters">{{sevEmoji(sev)}} {{sev}}
+            </label>
+          </div>
+          <div class="mt-3"><button class="btn btn-primary" @click="saveSeverityFilters"><i class="bi bi-check-lg"></i> Salvar Filtros de Severidade</button></div>
+        </div>
+
+        <!-- Tag filters (Rule 3) -->
+        <div v-if="destDetailTab==='tags'">
+          <div class="notice mb-3">
+            Lista de TAGs que este destino deve receber. Se nenhuma TAG for configurada, todos os alertas passam.<br>
+            O símbolo <strong style="color:var(--yellow)">!</strong> na coluna "Ignorar Sev." indica que alertas com esta TAG <strong>ignoram o filtro de severidade</strong> — útil para TAGs prioritárias que devem sempre ser notificadas.
+          </div>
+          <table style="width:100%;margin-bottom:16px"><thead>
+            <tr>
+              <th style="padding:8px">TAG Nome</th>
+              <th style="padding:8px">TAG Valor</th>
+              <th style="padding:8px;text-align:center">Ignorar Sev. (!)</th>
+              <th style="padding:8px">Ação</th>
+            </tr>
+          </thead><tbody>
+            <tr v-for="tf in destTagFilters" :key="tf.id" style="border-bottom:1px solid var(--border)">
+              <td style="padding:8px"><span class="tag-chip">{{tf.tag_name}}</span></td>
+              <td style="padding:8px"><span class="mono" style="font-size:12px">{{tf.tag_value||'*'}}</span></td>
+              <td style="padding:8px;text-align:center">
+                <span v-if="tf.negate_severity" class="ignore-sev-badge">! Ignora</span>
+                <span v-else style="color:var(--text3);font-size:12px">—</span>
+              </td>
+              <td style="padding:8px;display:flex;gap:6px">
+                <button class="btn btn-warning btn-sm" @click="toggleTagFilterNegate(tf)" :title="tf.negate_severity?'Remover ! (respeitar severidade)':'Adicionar ! (ignorar severidade)'">
+                  <i class="bi bi-exclamation-lg"></i>
+                </button>
+                <button class="btn btn-danger btn-sm" @click="deleteTagFilter(tf)"><i class="bi bi-trash"></i></button>
+              </td>
+            </tr>
+            <tr v-if="!destTagFilters.length"><td colspan="4" class="text-center text-muted" style="padding:20px">Nenhuma TAG configurada — todos os alertas passam</td></tr>
+          </tbody></table>
+          <div class="rule-card">
+            <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px">+ Adicionar TAG à Regra 3</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+              <div class="form-group" style="margin:0;flex:1;min-width:140px">
+                <label class="form-label">Nome da TAG</label>
+                <select v-if="globalTags.length" v-model="newTagFilter.tag_name" class="form-control form-select">
+                  <option value="__custom__">✏️ Digitar manualmente...</option>
+                  <option disabled>──────────────</option>
+                  <option value="">— qualquer TAG —</option>
+                  <option v-for="t in globalTags" :key="t.id" :value="t.name">{{t.name}}</option>
+                </select>
+                <input v-if="!globalTags.length || newTagFilter.tag_name==='__custom__'" v-model="newTagFilter.tag_name_custom" class="form-control" placeholder="nome da TAG" style="margin-top:6px">
+              </div>
+              <div class="form-group" style="margin:0;flex:1;min-width:140px">
+                <label class="form-label">Valor (opcional)</label>
+                <select v-if="tagValuesFor(resolvedTagName(newTagFilter)).length"
+                  v-model="newTagFilter.tag_value" class="form-control form-select">
+                  <option value="__custom_val__">✏️ Digitar manualmente...</option>
+                  <option disabled>──────────────</option>
+                  <option value="">vazio = qualquer valor</option>
+                  <option v-for="v in tagValuesFor(resolvedTagName(newTagFilter))" :key="v" :value="v">{{v}}</option>
+                </select>
+                <input v-if="!tagValuesFor(resolvedTagName(newTagFilter)).length || newTagFilter.tag_value==='__custom_val__'"
+                  v-model="newTagFilter.tag_value_custom" class="form-control"
+                  :placeholder="tagValuesFor(resolvedTagName(newTagFilter)).length ? 'valor livre' : 'vazio = qualquer valor'"
+                  style="margin-top:4px">
+              </div>
+              <div class="form-group" style="margin:0">
+                <label class="form-label">Ignorar Sev. (!)</label>
+                <div style="padding:8px 0"><label class="toggle"><input type="checkbox" v-model="newTagFilter.negate_severity"><span class="toggle-track"></span></label></div>
+              </div>
+              <button class="btn btn-primary" @click="addTagFilter" style="margin-bottom:16px"><i class="bi bi-plus-lg"></i> Adicionar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mentions tab -->
+        <div v-if="destDetailTab==='mentions'">
+          <div class="notice mb-3">
+            Configure quais pessoas serão mencionadas neste destino com base no valor da TAG do alerta.<br>
+            O sistema busca o valor da TAG no alerta (ex: <code class="code">RESPONSAVEL=joao.silva</code>)
+            e menciona o número correspondente cadastrado em <strong>TAGs → Menções</strong> — desde que o número seja participante do grupo.<br>
+            Use esta aba para filtrar: se configurado, apenas alertas cujo valor da TAG bata com os cadastrados abaixo serão processados para menção.
+          </div>
+
+          <!-- Mapping reference table -->
+          <div class="card mb-3">
+            <div class="card-header"><div class="card-title"><i class="bi bi-person-check"></i> Mapeamentos cadastrados (TAGs → Menções)</div></div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>TAG</th><th>Valor(es)</th><th>Telefone</th><th>Pessoa</th></tr></thead>
+                <tbody>
+                  <tr v-for="m in mappings" :key="m.id">
+                    <td class="mono" style="color:var(--cyan)">{{m.tag_name}}</td>
+                    <td>
+                      <span v-for="v in m.tag_value.split(',')" :key="v"
+                        class="tag-chip" style="margin-right:4px;cursor:pointer"
+                        @click="addMentionFilter(m.tag_name, v.trim())"
+                        title="Clique para adicionar como filtro neste destino">
+                        {{v.trim()}}
+                        <i class="bi bi-plus-circle" style="font-size:10px;color:var(--cyan)"></i>
+                      </span>
+                    </td>
+                    <td class="mono" style="font-size:11px">{{fmtPhone(m.phone_number)}}</td>
+                    <td style="color:var(--text2)">{{m.description||'—'}}</td>
+                  </tr>
+                  <tr v-if="!mappings.length"><td colspan="4" class="text-center text-muted" style="padding:20px">Nenhum mapeamento cadastrado em TAGs → Menções</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Active mention filters for this destination -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><i class="bi bi-funnel"></i> Filtros de menção ativos neste destino</div>
+            </div>
+            <div class="card-body">
+              <div class="notice notice-yellow mb-3">Se nenhum filtro for adicionado aqui, <strong>todas as menções mapeadas</strong> serão tentadas para cada alerta. Adicione filtros para restringir quais pessoas são mencionadas neste destino.</div>
+              <div v-if="mentionTagFilters.length" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+                <div v-for="tf in mentionTagFilters" :key="tf.id"
+                  style="display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 10px">
+                  <span style="color:var(--cyan);font-family:var(--mono);font-size:12px">{{tf.tag_name}}</span>
+                  <span style="color:var(--text3)">:</span>
+                  <span style="font-family:var(--mono);font-size:12px">{{tf.tag_value||'*'}}</span>
+                  <button class="btn btn-danger btn-sm" style="padding:2px 6px" @click="deleteTagFilter(tf)"><i class="bi bi-x"></i></button>
+                </div>
+              </div>
+              <div v-else class="text-muted mb-3">Nenhum filtro — todas as menções mapeadas serão aplicadas.</div>
+
+              <!-- Quick add by selecting from mappings -->
+              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+                <div class="form-group" style="margin:0;min-width:160px">
+                  <label class="form-label">TAG</label>
+                  <select v-model="newMentionFilter.tag_name" class="form-control form-select" @change="newMentionFilter.tag_value=''">
+                    <option value="__custom__">✏️ Digitar manualmente...</option>
+                    <option disabled>──────────────</option>
+                    <option value="">— qualquer —</option>
+                    <option v-for="tagName in mentionTagNames" :key="tagName" :value="tagName">{{tagName}}</option>
+                  </select>
+                  <input v-if="newMentionFilter.tag_name==='__custom__'" v-model="newMentionFilter.tag_name_custom" class="form-control" placeholder="nome da TAG" style="margin-top:6px">
+                </div>
+                <div class="form-group" style="margin:0;min-width:180px">
+                  <label class="form-label">Valor (Pessoa)</label>
+                  <select v-if="mentionValuesFor(newMentionFilter.tag_name).length" v-model="newMentionFilter.tag_value" class="form-control form-select">
+                    <option value="__custom_val__">✏️ Digitar manualmente...</option>
+                    <option disabled>──────────────</option>
+                    <option value="">vazio = qualquer</option>
+                    <option v-for="item in mentionValuesFor(newMentionFilter.tag_name)" :key="item.value" :value="item.value">
+                      {{item.value}} — {{item.desc}}
+                    </option>
+                  </select>
+                  <input v-if="!mentionValuesFor(newMentionFilter.tag_name).length || newMentionFilter.tag_value==='__custom_val__'"
+                    v-model="newMentionFilter.tag_value_custom" class="form-control" placeholder="valor (ex: joao.silva)" style="margin-top:4px">
+                </div>
+                <button class="btn btn-primary" @click="addMentionFilterForm" style="margin-bottom:16px"><i class="bi bi-plus-lg"></i> Adicionar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Schedules (Rule 2) -->
+        <div v-if="destDetailTab==='schedules'">
+          <div class="notice mb-3">
+            Define janelas de horário por severidade. Opcionalmente, cada regra pode ter um <strong>filtro de TAG</strong>: se a TAG estiver presente (ou ausente com <strong>!</strong>), a regra é aplicada apenas nesses casos.<br>
+            Ação fora da janela: <strong>Reter</strong> = envia quando o horário abrir | <strong>Descartar</strong> = ignora silenciosamente.
+          </div>
+
+          <div class="rule-card" v-for="rule in destSchedules" :key="rule.id">
+            <div class="flex-between mb-2">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span :class="'badge badge-'+rule.severity">{{sevEmoji(rule.severity)}} {{rule.severity}}</span>
+                <span v-if="rule.tag_filter_name" class="tag-chip">
+                  <span v-if="rule.tag_filter_negate" style="color:var(--red);font-weight:700">!</span>
+                  <span style="color:var(--cyan)">{{rule.tag_filter_name}}</span>
+                  <span v-if="rule.tag_filter_value" style="color:var(--text2)">:{{rule.tag_filter_value}}</span>
+                </span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <label class="toggle"><input type="checkbox" :checked="rule.active" @change="updateScheduleActive(rule,$event.target.checked)"><span class="toggle-track"></span></label>
+                <button class="btn btn-danger btn-sm" @click="deleteSchedule(rule)"><i class="bi bi-trash"></i></button>
+              </div>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">
+              <span v-for="(lbl,idx) in ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']" :key="idx" class="day-btn" :class="{active:rule.days_of_week.split(',').map(Number).includes(idx)}" @click="toggleRuleDay(rule,idx)">{{lbl}}</span>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+              <div class="form-group" style="margin:0"><label class="form-label">Início</label><input type="time" v-model="rule.start_time" class="form-control" style="width:120px" @change="updateSchedule(rule)"></div>
+              <div class="form-group" style="margin:0"><label class="form-label">Fim</label><input type="time" v-model="rule.end_time" class="form-control" style="width:120px" @change="updateSchedule(rule)"></div>
+              <div class="form-group" style="margin:0"><label class="form-label">Fora do horário</label>
+                <select v-model="rule.action" class="form-control form-select" style="width:150px" @change="updateSchedule(rule)">
+                  <option value="hold">⏸ Reter</option><option value="skip">🚫 Descartar</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin:0"><label class="form-label">Filtro TAG (opcional)</label>
+                <div style="display:flex;gap:6px;align-items:center">
+                  <div style="display:flex;align-items:center;gap:4px;padding:4px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;cursor:pointer" @click="rule.tag_filter_negate=!rule.tag_filter_negate;updateSchedule(rule)" :title="rule.tag_filter_negate?'! = regra aplica quando TAG AUSENTE':'regra aplica quando TAG PRESENTE'">
+                    <span :style="{color:rule.tag_filter_negate?'var(--red)':'var(--text3)',fontWeight:700,fontFamily:'var(--mono)'}">!</span>
+                  </div>
+                  <select v-if="globalTags.length" v-model="rule.tag_filter_name" class="form-control form-select" style="width:120px" @change="updateSchedule(rule)">
+                    <option value="">— TAG —</option>
+                    <option v-for="t in globalTags" :key="t.id" :value="t.name">{{t.name}}</option>
+                  </select>
+                  <input v-if="!globalTags.length" v-model="rule.tag_filter_name" class="form-control" style="width:120px" placeholder="TAG" @change="updateSchedule(rule)">
+                  <select v-if="tagValuesFor(rule.tag_filter_name).length"
+                    v-model="rule.tag_filter_value" class="form-control form-select" style="width:100px" @change="updateSchedule(rule)">
+                    <option value="">— valor —</option>
+                    <option v-for="v in tagValuesFor(rule.tag_filter_name)" :key="v" :value="v">{{v}}</option>
+                  </select>
+                  <input v-if="!tagValuesFor(rule.tag_filter_name).length"
+                    v-model="rule.tag_filter_value" class="form-control" style="width:100px" placeholder="valor (opt.)" @change="updateSchedule(rule)">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+          <div class="rule-card" style="border-style:dashed">
+            <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:12px">+ Nova Regra de Horário</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+              <div class="form-group" style="margin:0"><label class="form-label">Severidade</label>
+                <select v-model="newSchedule.severity" class="form-control form-select" style="width:140px">
+                  <option v-for="s in severities" :key="s" :value="s">{{sevEmoji(s)}} {{s}}</option>
+                </select>
+              </div>
+              <div><label class="form-label">Dias</label>
+                <div style="display:flex;gap:4px">
+                  <span v-for="(lbl,idx) in ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']" :key="idx" class="day-btn" :class="{active:newSchedule.days_of_week.split(',').map(Number).includes(idx)}" @click="toggleNewDay(idx)">{{lbl}}</span>
+                </div>
+              </div>
+              <div class="form-group" style="margin:0"><label class="form-label">Início</label><input type="time" v-model="newSchedule.start_time" class="form-control" style="width:110px"></div>
+              <div class="form-group" style="margin:0"><label class="form-label">Fim</label><input type="time" v-model="newSchedule.end_time" class="form-control" style="width:110px"></div>
+              <div class="form-group" style="margin:0"><label class="form-label">Ação fora</label>
+                <select v-model="newSchedule.action" class="form-control form-select" style="width:130px">
+                  <option value="hold">Reter</option><option value="skip">Descartar</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin:0"><label class="form-label">TAG filtro</label>
+                <div style="display:flex;gap:6px;align-items:center">
+                  <div style="display:flex;align-items:center;gap:4px;padding:4px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;cursor:pointer" @click="newSchedule.tag_filter_negate=!newSchedule.tag_filter_negate" :style="{borderColor:newSchedule.tag_filter_negate?'rgba(255,23,68,.4)':'var(--border)'}">
+                    <span :style="{color:newSchedule.tag_filter_negate?'var(--red)':'var(--text3)',fontWeight:700,fontFamily:'var(--mono)'}">!</span>
+                  </div>
+                  <select v-if="globalTags.length" v-model="newSchedule.tag_filter_name" class="form-control form-select" style="width:110px">
+                    <option value="">— TAG —</option>
+                    <option v-for="t in globalTags" :key="t.id" :value="t.name">{{t.name}}</option>
+                  </select>
+                  <input v-if="!globalTags.length" v-model="newSchedule.tag_filter_name" class="form-control" style="width:110px" placeholder="TAG">
+                  <select v-if="tagValuesFor(newSchedule.tag_filter_name).length"
+                    v-model="newSchedule.tag_filter_value" class="form-control form-select" style="width:100px">
+                    <option value="">— valor —</option>
+                    <option v-for="v in tagValuesFor(newSchedule.tag_filter_name)" :key="v" :value="v">{{v}}</option>
+                  </select>
+                  <input v-if="!tagValuesFor(newSchedule.tag_filter_name).length"
+                    v-model="newSchedule.tag_filter_value" class="form-control" style="width:90px" placeholder="valor">
+                </div>
+              </div>
+              <button class="btn btn-primary" @click="addSchedule" style="margin-bottom:16px"><i class="bi bi-plus-lg"></i> Adicionar</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer"><button class="btn btn-secondary" @click="showDestDetailModal=false">Fechar</button></div>
+    </div>
+  </div>
+
+  <!-- Mapping Modal -->
+  <div v-if="showMappingModal" class="modal-backdrop" @click.self="showMappingModal=false">
+    <div class="modal modal-sm">
+      <div class="modal-header"><div class="modal-title">{{mappingForm.id?'Editar':'Novo'}} Mapeamento TAG → Menção</div><button class="btn-close" @click="showMappingModal=false"><i class="bi bi-x-lg"></i></button></div>
+      <div class="modal-body">
+        <div class="form-group"><label class="form-label">Nome da TAG *</label>
+          <select v-if="globalTags.length" v-model="mappingForm.tag_name" class="form-control form-select">
+            <option value="__custom__">✏️ Digitar manualmente...</option>
+            <option disabled>──────────────</option>
+            <option value="">— qualquer TAG —</option>
+            <option v-for="t in globalTags" :key="t.id" :value="t.name">{{t.name}}</option>
+          </select>
+          <input v-if="!globalTags.length || mappingForm.tag_name==='__custom__'" v-model="mappingForm.tag_name_custom" class="form-control" :placeholder="globalTags.length?'nome da TAG':'ex: RESPONSAVEL'" style="margin-top:6px">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Valor(es) da TAG *</label>
+          <input v-model="mappingForm.tag_value" class="form-control" placeholder="ex: joao.silva ou joao.silva,maria.souza">
+          <div class="text-muted mt-1">Use vírgula para múltiplos valores — cada valor corresponde ao mesmo telefone</div>
+        </div>
+        <div class="form-group"><label class="form-label">Número de Telefone *</label>
+          <input v-model="mappingForm.phone_number" class="form-control" placeholder="5511999999999">
+          <div class="text-muted mt-1">DDD + número, apenas dígitos</div>
+        </div>
+        <div class="form-group"><label class="form-label">Descrição</label>
+          <input v-model="mappingForm.description" class="form-control" placeholder="ex: João Silva - Sysadmin">
+        </div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-secondary" @click="showMappingModal=false">Cancelar</button><button class="btn btn-primary" @click="saveMapping"><i class="bi bi-check-lg"></i> Salvar</button></div>
+    </div>
+  </div>
+
+  <!-- Global Tag Modal -->
+  <div v-if="showGlobalTagModal" class="modal-backdrop" @click.self="showGlobalTagModal=false">
+    <div class="modal modal-sm">
+      <div class="modal-header"><div class="modal-title">{{globalTagForm.id?'Editar':'Nova'}} TAG Global</div><button class="btn-close" @click="showGlobalTagModal=false"><i class="bi bi-x-lg"></i></button></div>
+      <div class="modal-body">
+        <div class="form-group"><label class="form-label">Nome da TAG *</label><input v-model="globalTagForm.name" class="form-control" placeholder="ex: RESPONSAVEL"></div>
+        <div class="form-group"><label class="form-label">Descrição</label><input v-model="globalTagForm.description" class="form-control" placeholder="ex: Responsável pelo alerta"></div>
+        <div class="form-group">
+          <label class="form-label">Cor</label>
+          <div style="display:flex;gap:10px;align-items:center">
+            <input type="color" v-model="globalTagForm.color" style="width:44px;height:36px;border:none;background:none;cursor:pointer;border-radius:6px">
+            <span class="tag-chip" :style="{'border-color':globalTagForm.color+'55','color':globalTagForm.color,'background':globalTagForm.color+'18'}">{{globalTagForm.name||'preview'}}</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-secondary" @click="showGlobalTagModal=false">Cancelar</button><button class="btn btn-primary" @click="saveGlobalTag"><i class="bi bi-check-lg"></i> Salvar</button></div>
+    </div>
+  </div>
+
+  <!-- User Modal -->
+  <div v-if="showUserModal" class="modal-backdrop" @click.self="showUserModal=false">
+    <div class="modal modal-sm">
+      <div class="modal-header"><div class="modal-title">{{userForm.id?'Editar':'Novo'}} Usuário</div><button class="btn-close" @click="showUserModal=false"><i class="bi bi-x-lg"></i></button></div>
+      <div class="modal-body">
+        <div class="form-group"><label class="form-label">Usuário *</label><input v-model="userForm.username" class="form-control"></div>
+        <div class="form-group" v-if="!userForm.id"><label class="form-label">Senha *</label><input v-model="userForm.password" type="password" class="form-control"></div>
+        <div class="form-group"><label class="form-label">Perfil</label><select v-model="userForm.role" class="form-control form-select"><option value="operator">Operador</option><option value="admin">Administrador</option></select></div>
+        <div class="form-group" v-if="userForm.id"><label class="form-label" style="display:flex;align-items:center;gap:8px">Ativo<label class="toggle"><input type="checkbox" v-model="userForm.active"><span class="toggle-track"></span></label></label></div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-secondary" @click="showUserModal=false">Cancelar</button><button class="btn btn-primary" @click="saveUser"><i class="bi bi-check-lg"></i> Salvar</button></div>
+    </div>
+  </div>
+
+  <!-- Password Modal (admin change others) -->
+  <div v-if="showPwModal" class="modal-backdrop" @click.self="showPwModal=false">
+    <div class="modal modal-sm">
+      <div class="modal-header"><div class="modal-title"><i class="bi bi-key"></i> Senha — {{pwForm.username}}</div><button class="btn-close" @click="showPwModal=false"><i class="bi bi-x-lg"></i></button></div>
+      <div class="modal-body"><div class="form-group"><label class="form-label">Nova Senha</label><input v-model="pwForm.newPassword" type="password" class="form-control"></div></div>
+      <div class="modal-footer"><button class="btn btn-secondary" @click="showPwModal=false">Cancelar</button><button class="btn btn-primary" @click="savePassword"><i class="bi bi-check-lg"></i> Salvar</button></div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div v-if="toast.show" :style="{position:'fixed',bottom:'24px',right:'24px',zIndex:9999,background:toast.type==='error'?'var(--red-dim)':'var(--green-dim)',border:'1px solid '+(toast.type==='error'?'rgba(255,23,68,.3)':'rgba(0,230,118,.3)'),color:toast.type==='error'?'var(--red)':'var(--green)',padding:'12px 18px',borderRadius:'8px',fontSize:'13px',display:'flex',alignItems:'center',gap:'8px',maxWidth:'360px',boxShadow:'0 4px 20px rgba(0,0,0,.4)'}">
+    <i :class="toast.type==='error'?'bi bi-exclamation-circle':'bi bi-check-circle'"></i>{{toast.message}}
+  </div>
+
+</div><!-- #app -->
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script>
+const{createApp}=Vue;
+const BASE='';const TOKEN_KEY='zw_token';
+function getHeaders(){const t=localStorage.getItem(TOKEN_KEY);return t?{Authorization:`Bearer ${t}`,'Content-Type':'application/json'}:{'Content-Type':'application/json'}}
+async function api(method,path,body){const opts={method,headers:getHeaders()};if(body)opts.body=JSON.stringify(body);const res=await fetch(BASE+path,opts);const data=await res.json().catch(()=>({}));if(!res.ok)throw new Error(data.error||`HTTP ${res.status}`);return data}
+
+createApp({
+  data(){return{
+    auth:{token:localStorage.getItem(TOKEN_KEY),user:null},
+    loginForm:{username:'admin',password:''},loginError:'',loading:{},
+    page:'dashboard',pageTitle:'Dashboard',now:'',
+    toast:{show:false,message:'',type:'success'},location:window.location,
+    dashboard:{},sessions:[],destinations:[],mappings:[],globalTags:[],
+    queueStats:{},queueItems:[],queueFilter:{status:'pending',destination_id:''},
+    users:[],logs:[],logFilter:{severity:'',status:''},settings:{},settingsForm:{},
+    showSessionModal:false,sessionForm:{id:null,name:'',api_url:'',api_key:'',session_name:'default'},
+    showDestModal:false,destForm:{id:null,name:'',type:'group',chat_id:'',waha_session_id:null,active:true,notify_all_enabled:false},
+    showDestDetailModal:false,selectedDest:null,destDetailTab:'severity',
+    newMentionFilter:{tag_name:'',tag_value:'',tag_name_custom:'',tag_value_custom:''},
+    destSeverityFilters:[],destTagFilters:[],destSchedules:[],
+    newTagFilter:{tag_name:'',tag_value:'',negate_severity:false,tag_name_custom:'',tag_value_custom:''},
+    newSchedule:{severity:'warning',days_of_week:'1,2,3,4,5',start_time:'08:00',end_time:'18:00',action:'hold',tag_filter_name:'',tag_filter_value:'',tag_filter_negate:false},
+    showMappingModal:false,mappingForm:{id:null,tag_name:'',tag_value:'',phone_number:'',description:''},
+    showGlobalTagModal:false,globalTagForm:{id:null,name:'',description:'',color:'#00d4ff'},
+    showUserModal:false,userForm:{id:null,username:'',password:'',role:'operator',active:true},
+    showPwModal:false,pwForm:{id:null,username:'',newPassword:''},
+    selfPw:{currentPassword:'',newPassword:''},pwChangeSuccess:false,pwChangeError:'',
+    severities:['not_classified','information','warning','average','high','disaster'],
+    _intervals:[],
+  }},
+  mounted(){
+    this.updateNow();this._intervals.push(setInterval(()=>this.updateNow(),30000));
+    if(this.auth.token){this.loadUser();this.init();}
+    this._intervals.push(setInterval(()=>{if(this.auth.token)this.loadQueueStats();},10000));
+  },
+  beforeUnmount(){this._intervals.forEach(clearInterval)},
+  computed:{
+    /** Unique tag names that have mention mappings */
+    mentionTagNames(){
+      return [...new Set((this.mappings||[]).map(m=>m.tag_name).filter(Boolean))].sort();
+    },
+    /** Tag filters of this destination that match a mapped tag name */
+    mentionTagFilters(){
+      const mapped = new Set((this.mappings||[]).map(m=>(m.tag_name||'')).filter(Boolean).map(x=>x.toLowerCase()));
+      return (this.destTagFilters||[]).filter(tf => mapped.has((tf.tag_name||'').toLowerCase()));
+    },
+  },
+  methods:{
+    updateNow(){this.now=new Date().toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',dateStyle:'short',timeStyle:'short'})},
+    showToast(message,type='success'){this.toast={show:true,message,type};setTimeout(()=>this.toast.show=false,3500)},
+    async login(){this.loginError='';this.loading.login=true;try{const data=await api('POST','/api/auth/login',this.loginForm);localStorage.setItem(TOKEN_KEY,data.token);this.auth.token=data.token;this.auth.user=data.user;await this.init();}catch(e){this.loginError=e.message;}finally{this.loading.login=false;}},
+    logout(){localStorage.removeItem(TOKEN_KEY);this.auth={token:null,user:null};},
+    async loadUser(){try{this.auth.user=await api('GET','/api/auth/me');}catch{this.logout();}},
+    async init(){await Promise.all([this.loadUser(),this.loadDashboard(),this.loadSessions(),this.loadDestinations(),this.loadMappings(),this.loadGlobalTags(),this.loadQueueStats()]);},
+    nav(p){const titles={dashboard:'Dashboard',sessions:'Sessões WAHA',destinations:'Destinos',queue:'Fila de Alertas',mappings:'TAGs → Menções',globalTags:'Cadastro de TAGs',users:'Usuários',logs:'Histórico',settings:'Configurações',password:'Minha Conta'};this.page=p;this.pageTitle=titles[p]||p;if(p==='queue'){this.loadQueue();this.loadQueueStats();}if(p==='logs')this.loadLogs();if(p==='users')this.loadUsers();if(p==='settings')this.loadSettings();if(p==='dashboard')this.loadDashboard();},
+    async loadDashboard(){try{this.dashboard=await api('GET','/api/dashboard');}catch{}},
+    // Sessions
+    async loadSessions(){try{this.sessions=await api('GET','/api/waha-sessions');}catch{}},
+    openSessionModal(s){this.sessionForm=s?{...s}:{id:null,name:'',api_url:'',api_key:'',session_name:'default'};this.showSessionModal=true;},
+    async saveSession(){try{if(this.sessionForm.id){await api('PUT',`/api/waha-sessions/${this.sessionForm.id}`,this.sessionForm);}else{await api('POST','/api/waha-sessions',this.sessionForm);}this.showSessionModal=false;await this.loadSessions();this.showToast('Sessão salva!');}catch(e){this.showToast(e.message,'error');}},
+    async deleteSession(s){if(!confirm(`Remover "${s.name}"?`))return;try{await api('DELETE',`/api/waha-sessions/${s.id}`);await this.loadSessions();}catch(e){this.showToast(e.message,'error');}},
+    async startSession(s){try{await api('POST',`/api/waha-sessions/${s.id}/start`);await this.loadSessions();this.showToast('Iniciando...');}catch(e){this.showToast(e.message,'error');}},
+    async stopSession(s){try{await api('POST',`/api/waha-sessions/${s.id}/stop`);await this.loadSessions();}catch(e){this.showToast(e.message,'error');}},
+    async checkSessionStatus(s){try{const r=await api('GET',`/api/waha-sessions/${s.id}/status`);await this.loadSessions();this.showToast(`Status: ${r.status||'?'}`);}catch(e){this.showToast(e.message,'error');}},
+    // Destinations
+    async loadDestinations(){try{this.destinations=await api('GET','/api/destinations');}catch{}},
+    openDestModal(d){this.destForm=d?{...d,active:!!d.active,notify_all_enabled:!!d.notify_all_enabled}:{id:null,name:'',type:'group',chat_id:'',waha_session_id:null,active:true,notify_all_enabled:false};this.showDestModal=true;},
+    async saveDest(){try{if(this.destForm.id){await api('PUT',`/api/destinations/${this.destForm.id}`,this.destForm);}else{await api('POST','/api/destinations',this.destForm);}this.showDestModal=false;await this.loadDestinations();this.showToast('Destino salvo!');}catch(e){this.showToast(e.message,'error');}},
+    async toggleDest(d){try{await api('PUT',`/api/destinations/${d.id}`,{active:!d.active});await this.loadDestinations();}catch(e){this.showToast(e.message,'error');}},
+    async deleteDest(d){if(!confirm(`Remover "${d.name}"?`))return;try{await api('DELETE',`/api/destinations/${d.id}`);await this.loadDestinations();}catch(e){this.showToast(e.message,'error');}},
+    async openDestDetail(d){
+      this.selectedDest=d;this.destDetailTab='severity';
+      this.destSeverityFilters=[...(d.severity_filters||[])];
+      this.destTagFilters=[...(d.tag_filters||[])];
+      this.destSchedules=[...(d.schedules||[])];
+      this.newTagFilter={tag_name:'',tag_value:'',negate_severity:false,tag_name_custom:'',tag_value_custom:''};
+      this.newSchedule={severity:'warning',days_of_week:'1,2,3,4,5',start_time:'08:00',end_time:'18:00',action:'hold',tag_filter_name:'',tag_filter_value:'',tag_filter_negate:false};
+      // Ensure mappings and globalTags are loaded for dropdowns
+      if(!this.mappings.length) await this.loadMappings();
+      if(!this.globalTags.length) await this.loadGlobalTags();
+      this.showDestDetailModal=true;
+    },
+    async saveSeverityFilters(){try{await api('PUT',`/api/destinations/${this.selectedDest.id}/severity-filters`,{severities:this.destSeverityFilters});await this.loadDestinations();this.showToast('Filtros salvos!');}catch(e){this.showToast(e.message,'error');}},
+    async addTagFilter(){
+      const tagName = this.newTagFilter.tag_name==='__custom__' ? (this.newTagFilter.tag_name_custom||'').trim() : (this.newTagFilter.tag_name||'').trim();
+      if(!tagName)return;
+      const tagValue = this.newTagFilter.tag_value==='__custom_val__' ? (this.newTagFilter.tag_value_custom||'').trim() : (this.newTagFilter.tag_value||'').trim();
+      const payload={...this.newTagFilter, tag_name: tagName, tag_value: tagValue};
+      try{const r=await api('POST',`/api/destinations/${this.selectedDest.id}/tag-filters`,payload);this.destTagFilters.push(r);this.newTagFilter={tag_name:'',tag_value:'',negate_severity:false,tag_name_custom:'',tag_value_custom:''};await this.loadDestinations();}catch(e){this.showToast(e.message,'error');}
+    },
+    async toggleTagFilterNegate(tf){try{await api('PUT',`/api/destinations/${this.selectedDest.id}/tag-filters/${tf.id}`,{negate_severity:!tf.negate_severity});tf.negate_severity=!tf.negate_severity;await this.loadDestinations();}catch(e){this.showToast(e.message,'error');}},
+    async deleteTagFilter(tf){try{await api('DELETE',`/api/destinations/${this.selectedDest.id}/tag-filters/${tf.id}`);this.destTagFilters=this.destTagFilters.filter(t=>t.id!==tf.id);await this.loadDestinations();}catch(e){this.showToast(e.message,'error');}},
+    async addSchedule(){try{const r=await api('POST',`/api/destinations/${this.selectedDest.id}/schedules`,this.newSchedule);this.destSchedules.push(r);this.showToast('Regra adicionada!');await this.loadDestinations();}catch(e){this.showToast(e.message,'error');}},
+    async updateSchedule(rule){try{await api('PUT',`/api/destinations/${this.selectedDest.id}/schedules/${rule.id}`,rule);}catch(e){this.showToast(e.message,'error');}},
+    async updateScheduleActive(rule,active){rule.active=active;await this.updateSchedule(rule);},
+    async deleteSchedule(rule){try{await api('DELETE',`/api/destinations/${this.selectedDest.id}/schedules/${rule.id}`);this.destSchedules=this.destSchedules.filter(r=>r.id!==rule.id);await this.loadDestinations();}catch(e){this.showToast(e.message,'error');}},
+    toggleRuleDay(rule,idx){const days=rule.days_of_week.split(',').map(Number);const i=days.indexOf(idx);if(i>=0)days.splice(i,1);else days.push(idx);rule.days_of_week=days.sort((a,b)=>a-b).join(',');this.updateSchedule(rule);},
+    toggleNewDay(idx){const days=this.newSchedule.days_of_week?this.newSchedule.days_of_week.split(',').map(Number):[];const i=days.indexOf(idx);if(i>=0)days.splice(i,1);else days.push(idx);this.newSchedule.days_of_week=days.sort((a,b)=>a-b).join(',');},
+    // Mention tab actions
+    async addMentionFilterForm(){
+      const tagName = this.newMentionFilter.tag_name==='__custom__'
+        ? (this.newMentionFilter.tag_name_custom||'').trim()
+        : (this.newMentionFilter.tag_name||'').trim();
+      if(!tagName) return;
+      const tagValue = this.newMentionFilter.tag_value==='__custom_val__'
+        ? (this.newMentionFilter.tag_value_custom||'').trim()
+        : (this.newMentionFilter.tag_value||'').trim();
+      try{
+        const r = await api('POST',`/api/destinations/${this.selectedDest.id}/tag-filters`,
+          {tag_name:tagName, tag_value:tagValue, negate_severity:0});
+        this.destTagFilters.push(r);
+        this.newMentionFilter={tag_name:'',tag_value:'',tag_name_custom:'',tag_value_custom:''};
+        await this.loadDestinations();
+        this.showToast('Filtro de menção adicionado!');
+      }catch(e){this.showToast(e.message,'error');}
+    },
+    async addMentionFilter(tagName, tagValue){
+      // Quick-add by clicking a chip in the mappings reference table
+      const already = this.destTagFilters.some(tf =>
+        tf.tag_name.toLowerCase()===tagName.toLowerCase() && tf.tag_value===tagValue
+      );
+      if(already){this.showToast('Filtro já existe','error');return;}
+      try{
+        const r = await api('POST',`/api/destinations/${this.selectedDest.id}/tag-filters`,
+          {tag_name:tagName, tag_value:tagValue, negate_severity:0});
+        this.destTagFilters.push(r);
+        await this.loadDestinations();
+        this.showToast(`Menção de ${tagValue} adicionada!`);
+      }catch(e){this.showToast(e.message,'error');}
+    },
+    // Mappings
+    async loadMappings(){try{this.mappings=await api('GET','/api/tag-mappings');}catch{}},
+    openMappingModal(m){this.mappingForm=m?{...m}:{id:null,tag_name:'',tag_value:'',phone_number:'',description:''};this.showMappingModal=true;},
+    async saveMapping(){
+      const tagName = this.mappingForm.tag_name==='__custom__' ? (this.mappingForm.tag_name_custom||'').trim() : (this.mappingForm.tag_name||'').trim();
+      if(!tagName){this.showToast('Nome da TAG obrigatório','error');return;}
+      const payload={...this.mappingForm, tag_name: tagName};
+      try{if(this.mappingForm.id){await api('PUT',`/api/tag-mappings/${this.mappingForm.id}`,payload);}else{await api('POST','/api/tag-mappings',payload);}this.showMappingModal=false;await this.loadMappings();this.showToast('Mapeamento salvo!');}catch(e){this.showToast(e.message,'error');}
+    },
+    async deleteMapping(m){if(!confirm('Remover?'))return;try{await api('DELETE',`/api/tag-mappings/${m.id}`);await this.loadMappings();}catch(e){this.showToast(e.message,'error');}},
+    // Global Tags
+    async loadGlobalTags(){try{this.globalTags=await api('GET','/api/global-tags');}catch{}},
+    openGlobalTagModal(t){this.globalTagForm=t?{...t}:{id:null,name:'',description:'',color:'#00d4ff'};this.showGlobalTagModal=true;},
+    async saveGlobalTag(){try{if(this.globalTagForm.id){await api('PUT',`/api/global-tags/${this.globalTagForm.id}`,this.globalTagForm);}else{await api('POST','/api/global-tags',this.globalTagForm);}this.showGlobalTagModal=false;await this.loadGlobalTags();this.showToast('TAG salva!');}catch(e){this.showToast(e.message,'error');}},
+    async deleteGlobalTag(t){if(!confirm(`Remover TAG "${t.name}"?`))return;try{await api('DELETE',`/api/global-tags/${t.id}`);await this.loadGlobalTags();}catch(e){this.showToast(e.message,'error');}},
+    // Queue
+    async loadQueueStats(){try{this.queueStats=await api('GET','/api/queue/stats');}catch{}},
+    async loadQueue(){try{const params=new URLSearchParams();if(this.queueFilter.status)params.set('status',this.queueFilter.status);if(this.queueFilter.destination_id)params.set('destination_id',this.queueFilter.destination_id);params.set('limit','50');const r=await api('GET',`/api/queue?${params}`);this.queueItems=r.items||r;}catch{}},
+    async pauseQueue(){try{await api('POST','/api/queue/pause');await this.loadQueueStats();this.showToast('Fila pausada.');}catch(e){this.showToast(e.message,'error');}},
+    async resumeQueue(){try{await api('POST','/api/queue/resume');await this.loadQueueStats();this.showToast('Fila retomada!');}catch(e){this.showToast(e.message,'error');}},
+    async flushQueue(){if(!confirm('Remover todos pendentes/retidos?'))return;try{const r=await api('POST','/api/queue/flush',{});await this.loadQueue();await this.loadQueueStats();this.showToast(`${r.deleted} removidos.`);}catch(e){this.showToast(e.message,'error');}},
+    async retryFailed(){try{const r=await api('POST','/api/queue/retry-failed',{});await this.loadQueue();await this.loadQueueStats();this.showToast(`${r.updated} reenviados.`);}catch(e){this.showToast(e.message,'error');}},
+    async clearFailed(){if(!confirm('Remover falhas?'))return;try{const r=await api('POST','/api/queue/clear-failed',{});await this.loadQueue();await this.loadQueueStats();this.showToast(`${r.deleted} removidos.`);}catch(e){this.showToast(e.message,'error');}},
+    async clearSent(){try{const r=await api('POST','/api/queue/clear-sent',{});await this.loadQueue();await this.loadQueueStats();this.showToast(`${r.deleted} removidos.`);}catch(e){this.showToast(e.message,'error');}},
+    async forceQueue(item){try{await api('POST',`/api/queue/${item.id}/force`,{});await this.loadQueue();await this.loadQueueStats();this.showToast('Enviado!');}catch(e){this.showToast(e.message,'error');}},
+    async deleteQueueItem(item){try{await api('DELETE',`/api/queue/${item.id}`);await this.loadQueue();await this.loadQueueStats();}catch(e){this.showToast(e.message,'error');}},
+    parseAlert(jsonStr){try{return JSON.parse(jsonStr);}catch{return {};}},
+    // Users
+    async loadUsers(){try{this.users=await api('GET','/api/users');}catch{}},
+    openUserModal(u){this.userForm=u?{...u,active:!!u.active}:{id:null,username:'',password:'',role:'operator',active:true};this.showUserModal=true;},
+    async saveUser(){try{if(this.userForm.id){await api('PUT',`/api/users/${this.userForm.id}`,this.userForm);}else{await api('POST','/api/users',this.userForm);}this.showUserModal=false;await this.loadUsers();this.showToast('Usuário salvo!');}catch(e){this.showToast(e.message,'error');}},
+    async deleteUser(u){if(!confirm(`Desativar "${u.username}"?`))return;try{await api('DELETE',`/api/users/${u.id}`);await this.loadUsers();}catch(e){this.showToast(e.message,'error');}},
+    openPwModal(u){this.pwForm={id:u.id,username:u.username,newPassword:''};this.showPwModal=true;},
+    async savePassword(){try{await api('PUT',`/api/users/${this.pwForm.id}/password`,{newPassword:this.pwForm.newPassword});this.showPwModal=false;this.showToast('Senha alterada!');}catch(e){this.showToast(e.message,'error');}},
+    async changeSelfPw(){this.pwChangeSuccess=false;this.pwChangeError='';try{await api('PUT',`/api/users/${this.auth.user.id}/password`,this.selfPw);this.pwChangeSuccess=true;this.selfPw={currentPassword:'',newPassword:''};}catch(e){this.pwChangeError=e.message;}},
+    // Logs
+    async loadLogs(){try{const params=new URLSearchParams();if(this.logFilter.severity)params.set('severity',this.logFilter.severity);if(this.logFilter.status)params.set('status',this.logFilter.status);params.set('limit','100');const r=await api('GET',`/api/logs?${params}`);this.logs=r.items||r;}catch{}},
+    // Settings
+    async loadSettings(){try{this.settings=await api('GET','/api/settings');this.settingsForm={...this.settings};}catch{}},
+    async saveSettings(){try{await api('PUT','/api/settings',this.settingsForm);this.showToast('Configurações salvas!');}catch(e){this.showToast(e.message,'error');}},
+    async runCleanup(){try{const r=await api('POST','/api/settings/cleanup-now');this.showToast(`Limpeza: ${r.byAge+r.byCount} logs, ${r.queueTrimmed} fila removidos.`);}catch(e){this.showToast(e.message,'error');}},
+    /** Returns [{value, desc}] for a tag name from tag_phone_mappings */
+    mentionValuesFor(tagName){
+      if(!tagName || tagName==='__custom__') return [];
+      const name = tagName.toLowerCase().trim();
+      const items = [];
+      const seen = new Set();
+      for(const m of (this.mappings||[])){
+        if((m.tag_name||'').toLowerCase().trim()===name && m.tag_value){
+          for(const v of m.tag_value.split(',').map(x=>x.trim()).filter(x=>x)){
+            if(!seen.has(v)){
+              seen.add(v);
+              items.push({value:v, desc:m.description||this.fmtPhone(m.phone_number)||''});
+            }
+          }
+        }
+      }
+      return items.sort((a,b)=>a.value.localeCompare(b.value));
+    },
+    // TAG helpers
+    /** Returns the resolved tag name accounting for __custom__ selection */
+    resolvedTagName(filter){
+      return filter.tag_name==='__custom__' ? (filter.tag_name_custom||'') : (filter.tag_name||'');
+    },
+    /** Returns known values for a tag name from:
+     *  1. tag_phone_mappings (mention mappings)
+     *  2. existing tag filters across all destinations
+     *  3. global_tags description field (used as value hint) */
+    tagValuesFor(tagName){
+      if(!tagName || tagName==='__custom__') return [];
+      const name = tagName.toLowerCase().trim();
+      const vals = new Set();
+      // 1. From tag_phone_mappings — these are the mention values (e.g. joao.silva, maria.souza)
+      for(const m of (this.mappings||[])){
+        if((m.tag_name||'').toLowerCase().trim()===name && m.tag_value){
+          for(const v of m.tag_value.split(',')){ const t=v.trim(); if(t) vals.add(t); }
+        }
+      }
+      // 2. From existing tag filters across all destinations
+      for(const d of (this.destinations||[])){
+        for(const tf of (d.tag_filters||[])){
+          if((tf.tag_name||'').toLowerCase().trim()===name && tf.tag_value){
+            for(const v of tf.tag_value.split(',')){ const t=v.trim(); if(t) vals.add(t); }
+          }
+        }
+      }
+      // 3. From global_tags — use description as value hint (e.g. tag "FGTS" desc "1" => value "1")
+      for(const gt of (this.globalTags||[])){
+        if((gt.name||'').toLowerCase().trim()===name && gt.description && gt.description.trim()){
+          for(const v of gt.description.split(',')){ const t=v.trim(); if(t) vals.add(t); }
+        }
+      }
+      return Array.from(vals).sort();
+    },
+    // Utils
+    fmtDate(d){if(!d)return'—';return new Date(d).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',dateStyle:'short',timeStyle:'short'});},
+    fmtPhone(p){if(!p)return'—';const s=String(p).replace(/\D/g,'');if(s.length>=12)return`+${s.slice(0,2)} (${s.slice(2,4)}) ${s.slice(4,9)}-${s.slice(9)}`;if(s.length===11)return`(${s.slice(0,2)}) ${s.slice(2,7)}-${s.slice(7)}`;return s;},
+    sevEmoji(sev){return{not_classified:'⚪',information:'ℹ️',warning:'⚠️',average:'🟠',high:'🔴',disaster:'💥'}[sev]||'';},
+  }
+}).mount('#app');
+</script>
+</body>
+</html>
