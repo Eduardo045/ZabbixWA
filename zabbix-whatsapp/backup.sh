@@ -95,7 +95,7 @@ ensure_backup_dir() {
     info "Diretório de backup já existe: ${CYAN}${BACKUP_DIR}${NC}"
   else
     info "Criando diretório: ${CYAN}${BACKUP_DIR}${NC}"
-    mkdir -p "$BACKUP_DIR" || die "Não foi possível criar o diretório: ${BACKUP_DIR}"
+    mkdir -p "$BACKUP_DIR" && chmod 700 "$BACKUP_DIR" || die "Não foi possível criar o diretório: ${BACKUP_DIR}"
     success "Diretório criado."
   fi
 }
@@ -201,6 +201,9 @@ EOF
   tar -czf "$backup_file" -C "$tmp_dir" . \
     && success "Backup criado: ${CYAN}${backup_file}${NC}" \
     || die "Falha ao criar o arquivo de backup."
+
+  # Restrict permissions: only owner can read the backup (contains API keys and JWT_SECRET)
+  chmod 600 "$backup_file"
 
   # Tamanho
   local size

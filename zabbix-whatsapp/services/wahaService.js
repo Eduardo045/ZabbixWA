@@ -6,6 +6,11 @@ function getClient(session) {
   return axios.create({ baseURL: session.api_url, headers, timeout: 15000 });
 }
 
+// Sanitize session_name before use in URL segments to prevent path traversal
+function safeSessionName(name) {
+  return encodeURIComponent(String(name || 'default').replace(/[^a-zA-Z0-9_-]/g, ''));
+}
+
 async function startSession(session) {
   const client = getClient(session);
   try {
@@ -17,7 +22,7 @@ async function startSession(session) {
   } catch (e) {
     if (e.response?.status === 422 || e.response?.data?.message?.includes('exist')) {
       // Session already exists, try to start it
-      const res2 = await client.post(`/api/sessions/${session.session_name}/start`);
+      const res2 = await client.post(`/api/sessions/${safeSessionName(session.session_name)}/start`);
       return res2.data;
     }
     throw new Error(e.response?.data?.message || e.message);
@@ -27,7 +32,7 @@ async function startSession(session) {
 async function stopSession(session) {
   const client = getClient(session);
   try {
-    await client.post(`/api/sessions/${session.session_name}/stop`);
+    await client.post(`/api/sessions/${safeSessionName(session.session_name)}/stop`);
   } catch (e) {
     throw new Error(e.response?.data?.message || e.message);
   }
@@ -36,7 +41,7 @@ async function stopSession(session) {
 async function getSessionStatus(session) {
   const client = getClient(session);
   try {
-    const res = await client.get(`/api/sessions/${session.session_name}`);
+    const res = await client.get(`/api/sessions/${safeSessionName(session.session_name)}`);
     return res.data;
   } catch (e) {
     if (e.response?.status === 404) return { status: 'not_found' };
@@ -65,7 +70,7 @@ async function getGroupParticipants(session, groupId) {
   const client = getClient(session);
   try {
     // Try WAHA groups endpoint
-    const res = await client.get(`/api/${session.session_name}/groups/${encodeURIComponent(groupId)}/participants`);
+    const res = await client.get(`/api/${safeSessionName(session.session_name)}/groups/${encodeURIComponent(groupId)}/participants`);
     return res.data || [];
   } catch (e) {
     // Try alternative endpoint format
@@ -84,7 +89,7 @@ async function getGroupParticipants(session, groupId) {
 async function listChats(session) {
   const client = getClient(session);
   try {
-    const res = await client.get(`/api/${session.session_name}/chats`);
+    const res = await client.get(`/api/${safeSessionName(session.session_name)}/chats`);
     return res.data || [];
   } catch (e) {
     throw new Error(e.response?.data?.message || e.message);

@@ -12,6 +12,8 @@ services:
       - .env
     volumes:
       - waha_sessions:/app/.sessions
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     environment:
       WHATSAPP_DEFAULT_ENGINE: WEBJS
     logging:
@@ -31,6 +33,8 @@ services:
       - waha
     volumes:
       - app_data:/app/data
+      - /etc/localtime:/etc/localtime:ro   # herda timezone do host automaticamente
+      - /etc/timezone:/etc/timezone:ro
     environment:
       PORT: "3000"
       NODE_ENV: production
@@ -38,6 +42,8 @@ services:
       WEBHOOK_TOKEN: ""
       DB_PATH: /app/data/zabbix-whatsapp.db
       QUEUE_INTERVAL_MS: "5000"
+      NODE_ENV: "production"
+      # ALLOWED_ORIGINS: "https://zabbix-wa.empresa.com"  # restrict CORS in production
     logging:
       driver: "json-file"
       options:

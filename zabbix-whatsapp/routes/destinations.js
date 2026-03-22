@@ -9,10 +9,12 @@ const SEVERITIES = ['not_classified','information','warning','average','high','d
 
 function buildDestination(row) {
   const sevFilters = db.prepare(`SELECT severity FROM destination_severity_filters WHERE destination_id = ?`).all(row.id).map(r => r.severity);
+  const sevConditions = db.prepare(`SELECT * FROM destination_severity_conditions WHERE destination_id = ?`).all(row.id);
+  const mentionFilters = db.prepare(`SELECT * FROM destination_mention_filters WHERE destination_id = ?`).all(row.id);
   const tagFilters = db.prepare(`SELECT * FROM destination_tag_filters WHERE destination_id = ?`).all(row.id);
   const schedules = db.prepare(`SELECT * FROM schedule_rules WHERE destination_id = ? ORDER BY id`).all(row.id);
   const session = row.waha_session_id ? db.prepare(`SELECT id, name, session_name, api_url, status FROM waha_sessions WHERE id = ?`).get(row.waha_session_id) : null;
-  return { ...row, severity_filters: sevFilters, tag_filters: tagFilters, schedules, session };
+  return { ...row, severity_filters: sevFilters, sev_conditions: sevConditions, tag_filters: tagFilters, mention_filters: mentionFilters, schedules, session };
 }
 
 router.get('/', (req, res) => {
@@ -27,10 +29,10 @@ router.get('/:id', (req, res) => {
 });
 
 router.post('/', (req, res) => {
-  const { name, type = 'group', chat_id, waha_session_id, active = 1, notify_all_enabled = 0 } = req.body;
+  const { name, type = 'group', chat_id, waha_session_id, active = 1, notify_all_enabled = 0, severity_mode = 'whitelist' } = req.body;
   if (!name || !chat_id) return res.status(400).json({ error: 'name and chat_id required' });
-  const result = db.prepare(`INSERT INTO destinations (name, type, chat_id, waha_session_id, active, notify_all_enabled) VALUES (?, ?, ?, ?, ?, ?)`)
-    .run(name, type, chat_id, waha_session_id || null, active ? 1 : 0, notify_all_enabled ? 1 : 0);
+  const result = db.prepare(`INSERT INTO destinations (name, type, chat_id, waha_session_id, active, notify_all_enabled, severity_mode) VALUES (?, ?, ?, ?, ?, ?, ?)`)
+    .run(name, type, chat_id, waha_session_id || null, active ? 1 : 0, notify_all_enabled ? 1 : 0, severity_mode);
   res.json({ id: result.lastInsertRowid, ...req.body });
 });
 
@@ -38,10 +40,12 @@ router.put('/:id', (req, res) => {
   const d = db.prepare(`SELECT * FROM destinations WHERE id = ?`).get(req.params.id);
   if (!d) return res.status(404).json({ error: 'Not found' });
   const { name, type, chat_id, waha_session_id, active, notify_all_enabled } = req.body;
-  db.prepare(`UPDATE destinations SET name=?, type=?, chat_id=?, waha_session_id=?, active=?, notify_all_enabled=? WHERE id=?`)
+  const new_severity_mode = req.body.severity_mode;
+  db.prepare(`UPDATE destinations SET name=?, type=?, chat_id=?, waha_session_id=?, active=?, notify_all_enabled=?, severity_mode=? WHERE id=?`)
     .run(name??d.name, type??d.type, chat_id??d.chat_id, waha_session_id??d.waha_session_id,
       active!==undefined?(active?1:0):d.active,
       notify_all_enabled!==undefined?(notify_all_enabled?1:0):d.notify_all_enabled,
+      new_severity_mode??d.severity_mode??'whitelist',
       req.params.id);
   res.json({ success: true });
 });
@@ -118,3 +122,39 @@ router.delete('/:id/schedules/:sid', (req, res) => {
 });
 
 module.exports = router;
+
+// ── Severity Conditions (optional TAG per severity) ─────────────────────────
+router.get('/:id/severity-conditions', (req, res) => {
+  res.json(db.prepare(`SELECT * FROM destination_severity_conditions WHERE destination_id = ?`).all(req.params.id));
+});
+
+router.post('/:id/severity-conditions', (req, res) => {
+  const { severity, tag_name = '', tag_value = '' } = req.body;
+  if (!severity) return res.status(400).json({ error: 'severity required' });
+  const r = db.prepare(`INSERT INTO destination_severity_conditions (destination_id,severity,tag_name,tag_value) VALUES (?,?,?,?)`)
+    .run(req.params.id, severity, tag_name, tag_value);
+  res.json({ id: r.lastInsertRowid, severity, tag_name, tag_value });
+});
+
+router.delete('/:id/severity-conditions/:cid', (req, res) => {
+  db.prepare(`DELETE FROM destination_severity_conditions WHERE id = ? AND destination_id = ?`).run(req.params.cid, req.params.id);
+  res.json({ success: true });
+});
+
+// ── Mention Filters (who gets mentioned — does NOT affect routing) ──────────
+router.get('/:id/mention-filters', (req, res) => {
+  res.json(db.prepare(`SELECT * FROM destination_mention_filters WHERE destination_id = ?`).all(req.params.id));
+});
+
+router.post('/:id/mention-filters', (req, res) => {
+  const { tag_name, tag_value = '' } = req.body;
+  if (!tag_name) return res.status(400).json({ error: 'tag_name required' });
+  const r = db.prepare(`INSERT INTO destination_mention_filters (destination_id,tag_name,tag_value) VALUES (?,?,?)`)
+    .run(req.params.id, tag_name, tag_value);
+  res.json({ id: r.lastInsertRowid, tag_name, tag_value });
+});
+
+router.delete('/:id/mention-filters/:mid', (req, res) => {
+  db.prepare(`DELETE FROM destination_mention_filters WHERE id = ? AND destination_id = ?`).run(req.params.mid, req.params.id);
+  res.json({ success: true });
+});

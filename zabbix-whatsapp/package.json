@@ -1,6 +1,6 @@
 {
   "name": "zabbix-whatsapp",
-  "version": "1.3.0",
+  "version": "1.4.1",
   "description": "Zabbix to WhatsApp integration via WAHA \u2014 by Eduardo Fontoura",
   "author": "Eduardo Fontoura",
   "license": "MIT",
@@ -19,7 +19,8 @@
     "express-rate-limit": "^7.1.5",
     "jsonwebtoken": "^9.0.2",
     "node-cron": "^3.0.3",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "helmet": "^7.1.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.3"

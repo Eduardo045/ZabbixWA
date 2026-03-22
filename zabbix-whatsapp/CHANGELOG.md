@@ -111,3 +111,32 @@ O formato segue o padrão [Keep a Changelog](https://keepachangelog.com/pt-BR/1.
 - Histórico de alertas com filtros
 - Dashboard com estatísticas em tempo real
 - Configurações globais via painel
+
+---
+
+## [1.4.0] — 2026-03-21
+
+### Adicionado
+- **Tabela `destination_mention_filters`:** filtros de menção agora ficam em tabela dedicada, completamente separada dos filtros de roteamento — menções nunca mais bloqueiam a entrega do alerta
+- **Tabela `destination_severity_conditions`:** cada severidade selecionada pode ter uma condição de TAG opcional — alerta da severidade X só passa se também tiver a TAG Y configurada
+- **Modo Bypass de Severidade** (`severity_mode=bypass`): ignora completamente o filtro de severidade e roteia o destino exclusivamente pelas TAGs da Regra 3 — ideal para destinos multi-severidade filtrados por responsável
+- **Endpoints novos:** `POST/DELETE /api/destinations/:id/mention-filters` e `POST/DELETE /api/destinations/:id/severity-conditions`
+- **Configurações → Fuso Horário e NTP:** dropdown com 80+ fusos horários, preview em tempo real, botão "Sincronizar com NTP" detecta timezone automaticamente pelo IP via worldtimeapi.org com fallback para timeapi.io
+- **`GET /api/timezones`:** lista de fusos horários disponíveis para o dropdown
+- **`GET /api/server-info`** (público, sem auth): retorna timezone configurado e horário atual UTC
+- **Timezone no banco:** configuração `timezone` persistida no SQLite, aplicada nas mensagens WhatsApp e no painel
+
+### Corrigido
+- **Bug crítico — menções bloqueando roteamento:** `destination_tag_filters` era usado tanto para roteamento quanto para menções — com 4 filtros de menção, qualquer alerta sem aquelas TAGs era bloqueado. Agora roteamento e menções são tabelas e lógicas completamente separadas
+- **Bug — severidade acoplada à TAG:** antes, marcar um responsável em um destino fazia o destino só receber alertas com aquela TAG, ignorando alertas da mesma severidade sem a TAG
+- **Bug — tela em branco após abertura de aba Menções:** `get mentionTagNames()` e `get mentionTagFilters()` eram getters JavaScript dentro de `methods:{}` do Vue — movidos para `computed:{}` onde pertencem
+- **Bug — vírgula dupla `},,`:** substituição do `saveSettings` gerou `,, ` no JS causando tela em branco e templates Vue crus (`{{pwForm.username}}`) exibidos
+- **Bug — datas exibidas com offset duplo:** SQLite armazena UTC sem `Z` — `new Date("2026-03-20 09:13")` era interpretado como horário local. Corrigido com append de `Z` antes do parse
+- **Timezone hardcoded `America/Sao_Paulo`:** substituído por leitura da configuração `timezone` do banco em `alertService.js` e do endpoint `/api/server-info` no frontend
+
+### Alterado
+- `alertService.js` reescrito com lógica de roteamento, severidade e menção completamente independentes
+- Aba **Severidade** no modal de destino: adicionado formulário de condições de TAG por severidade e aviso de modo Bypass
+- Aba **Menções** no modal de destino: agora usa `destination_mention_filters` e tem chips clicáveis para adicionar filtros rapidamente
+- Cadastro de destino: novo campo **Modo de Filtro de Severidade** (whitelist / bypass)
+- `database.js`: migrations automáticas para `severity_mode`, novas tabelas criadas on-startup sem perder dados existentes

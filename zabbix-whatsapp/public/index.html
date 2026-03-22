@@ -170,7 +170,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:rgba(255,255,255,.02)
     <nav class="sidebar">
       <div class="sidebar-header">
         <i class="bi bi-broadcast logo-icon"></i>
-        <div><div class="logo-text">ZabbixWA</div><div class="logo-sub">v1.3.0 — Monitor NOC</div></div>
+        <div><div class="logo-text">ZabbixWA</div><div class="logo-sub">v1.4.1 — Monitor NOC</div></div>
       </div>
       <div class="sidebar-nav">
         <div class="nav-section">
@@ -204,7 +204,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:rgba(255,255,255,.02)
           <div><div class="user-name">{{ auth.user?.username }}</div><div class="user-role">{{ auth.user?.role }}</div></div>
           <i class="bi bi-box-arrow-right" style="margin-left:auto;color:var(--text3);font-size:14px;" @click.stop="logout" title="Sair"></i>
         </div>
-        <div style="padding:6px 8px 2px;text-align:center;"><span style="font-size:9px;color:var(--text3);">ZabbixWA v1.3.0 &nbsp;·&nbsp; por <span style="color:var(--text2);">Eduardo Fontoura</span></span></div>
+        <div style="padding:6px 8px 2px;text-align:center;"><span style="font-size:9px;color:var(--text3);">ZabbixWA v1.4.1 &nbsp;·&nbsp; por <span style="color:var(--text2);">Eduardo Fontoura</span></span></div>
       </div>
     </nav>
 
@@ -508,8 +508,48 @@ tr:last-child td{border-bottom:none}tr:hover td{background:rgba(255,255,255,.02)
             <div class="card-body">
               <div class="form-group"><label class="form-label">Token do Webhook (opcional)</label><input v-model="settingsForm.webhook_token" class="form-control" placeholder="Deixe vazio para desativar"><div class="text-muted mt-1">Se definido, adicione <code class="code">?token=TOKEN</code> na URL do webhook</div></div>
               <div class="notice mt-2"><strong>URL do Webhook:</strong><br><code class="code" style="display:block;margin-top:6px;word-break:break-all">{{ location.origin }}/api/webhook/zabbix</code></div>
+              <div class="notice notice-yellow mt-2"><strong>JWT_SECRET:</strong> Defina no <code class="code">docker-compose.yml</code> com <code class="code">openssl rand -hex 32</code>. O servidor recusa inicializar sem uma chave segura.</div>
             </div>
           </div>
+          <!-- NTP / Timezone -->
+          <div class="card mb-3">
+            <div class="card-header"><div class="card-title"><i class="bi bi-clock-history"></i> Fuso Horário e Sincronização NTP</div></div>
+            <div class="card-body">
+              <div class="notice mb-3">
+                Configure o fuso horário exibido no painel e nas mensagens enviadas ao WhatsApp.<br>
+                Use <strong>Sincronizar com NTP</strong> para detectar automaticamente via serviço de tempo externo,
+                ou selecione manualmente na lista.
+              </div>
+              <div class="row mb-3">
+                <div class="form-group">
+                  <label class="form-label">Fuso Horário Atual</label>
+                  <select v-model="settingsForm.timezone" class="form-control form-select">
+                    <option v-for="tz in timezones" :key="tz" :value="tz">{{tz}}</option>
+                    <option v-if="!timezones.length" :value="settingsForm.timezone">{{settingsForm.timezone}}</option>
+                  </select>
+                  <div class="text-muted mt-1">
+                    Hora atual neste fuso: <strong>{{fmtNow(settingsForm.timezone)}}</strong>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Servidor NTP</label>
+                  <input v-model="settingsForm.ntp_server" class="form-control" placeholder="pool.ntp.org">
+                  <div class="text-muted mt-1">Usado como referência na sincronização automática</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                <button class="btn btn-primary" @click="syncNtp" :disabled="ntpSyncing">
+                  <i :class="ntpSyncing?'bi bi-arrow-repeat spin':'bi bi-cloud-download'"></i>
+                  {{ntpSyncing ? 'Sincronizando...' : 'Sincronizar com NTP'}}
+                </button>
+                <div v-if="ntpResult" :class="ntpResult.error?'alert alert-error':'alert alert-success'" style="margin:0;padding:8px 14px;flex:1">
+                  <span v-if="ntpResult.error">{{ ntpResult.error }}</span>
+                  <span v-else>✅ Fuso detectado: <strong>{{ ntpResult.timezone }}</strong> via {{ ntpResult.source }} · {{ ntpResult.ntp_time }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="text-right"><button class="btn btn-primary" @click="saveSettings"><i class="bi bi-check-lg"></i> Salvar Configurações</button></div>
         </div>
 
@@ -521,7 +561,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:rgba(255,255,255,.02)
                 <div v-if="pwChangeSuccess" class="alert alert-success">Senha alterada!</div>
                 <div v-if="pwChangeError" class="alert alert-error">{{pwChangeError}}</div>
                 <div class="form-group" v-if="auth.user?.role!=='admin'"><label class="form-label">Senha Atual</label><input v-model="selfPw.currentPassword" type="password" class="form-control"></div>
-                <div class="form-group"><label class="form-label">Nova Senha</label><input v-model="selfPw.newPassword" type="password" class="form-control"></div>
+                <div class="form-group"><label class="form-label">Nova Senha</label><input v-model="selfPw.newPassword" type="password" class="form-control"><div class="text-muted mt-1">Mínimo 8 caracteres com letras e números</div></div>
                 <button class="btn btn-primary btn-full mt-2" @click="changeSelfPw"><i class="bi bi-check-lg"></i> Alterar</button>
               </div>
             </div>
@@ -541,7 +581,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:rgba(255,255,255,.02)
       <div class="modal-body">
         <div class="form-group"><label class="form-label">Nome *</label><input v-model="sessionForm.name" class="form-control" placeholder="ex: Principal"></div>
         <div class="form-group"><label class="form-label">URL da API WAHA *</label><input v-model="sessionForm.api_url" class="form-control" placeholder="http://waha:3000"></div>
-        <div class="form-group"><label class="form-label">API Key</label><input v-model="sessionForm.api_key" class="form-control" placeholder="do arquivo .env do WAHA"></div>
+        <div class="form-group"><label class="form-label">API Key</label><input v-model="sessionForm.api_key" class="form-control" :placeholder="sessionForm.api_key_placeholder || 'do arquivo .env do WAHA'"><div class="text-muted mt-1" v-if="sessionForm.api_key_set && !sessionForm.api_key">Deixe em branco para manter a chave atual</div></div>
         <div class="form-group"><label class="form-label">Nome da Sessão</label><input v-model="sessionForm.session_name" class="form-control" placeholder="default"></div>
       </div>
       <div class="modal-footer"><button class="btn btn-secondary" @click="showSessionModal=false">Cancelar</button><button class="btn btn-primary" @click="saveSession"><i class="bi bi-check-lg"></i> Salvar</button></div>
@@ -575,6 +615,15 @@ tr:last-child td{border-bottom:none}tr:hover td{background:rgba(255,255,255,.02)
           </div>
         </div>
         <div class="divider"></div>
+        <div class="form-group">
+          <label class="form-label">Modo de Filtro de Severidade</label>
+          <select v-model="destForm.severity_mode" class="form-control form-select">
+            <option value="whitelist">🔴 Whitelist — apenas severidades selecionadas passam</option>
+            <option value="bypass">🔓 Bypass — ignorar severidade, rotear apenas pelas TAGs (Regra 3)</option>
+          </select>
+          <div class="text-muted mt-1" v-if="destForm.severity_mode==='bypass'">No modo Bypass, a aba Severidade é ignorada — configure as TAGs na aba Regra 3 para controlar quais alertas chegam.</div>
+        </div>
+        <div class="divider"></div>
         <div class="flex-center gap-2">
           <label class="toggle"><input type="checkbox" v-model="destForm.active"><span class="toggle-track"></span></label>
           <span style="font-size:13px">Destino ativo</span>
@@ -606,13 +655,63 @@ tr:last-child td{border-bottom:none}tr:hover td{background:rgba(255,255,255,.02)
 
         <!-- Severity -->
         <div v-if="destDetailTab==='severity'">
-          <div class="notice mb-3">Selecione as severidades que este destino deve receber. Se nenhuma, recebe todas. Este filtro é respeitado pela Regra 3 — salvo se a TAG estiver marcada com <strong>!</strong> (ignora severidade).</div>
-          <div class="severity-selector">
-            <label v-for="sev in severities" :key="sev" class="check-item" :class="['sev-'+sev, destSeverityFilters.includes(sev)?'checked':'']">
-              <input type="checkbox" :value="sev" v-model="destSeverityFilters">{{sevEmoji(sev)}} {{sev}}
-            </label>
+          <div v-if="selectedDest.severity_mode==='bypass'" class="notice notice-yellow mb-3">
+            <strong>Modo Bypass ativo:</strong> este destino ignora o filtro de severidade. Os alertas são roteados exclusivamente pelas TAGs na Regra 3.<br>
+            Para ativar o filtro de severidade, altere o <strong>Modo de Filtro</strong> no cadastro do destino (botão ✏️).
           </div>
-          <div class="mt-3"><button class="btn btn-primary" @click="saveSeverityFilters"><i class="bi bi-check-lg"></i> Salvar Filtros de Severidade</button></div>
+          <div v-else>
+            <div class="notice mb-3">
+              Selecione as severidades que este destino deve receber. Se nenhuma for marcada, <strong>todos os alertas passam</strong>.<br>
+              Opcionalmente, adicione uma <strong>condição de TAG</strong> a cada severidade — se definida, apenas alertas com aquela severidade E aquela TAG serão entregues.
+            </div>
+            <div class="severity-selector mb-3">
+              <label v-for="sev in severities" :key="sev" class="check-item" :class="['sev-'+sev, destSeverityFilters.includes(sev)?'checked':'']">
+                <input type="checkbox" :value="sev" v-model="destSeverityFilters">{{sevEmoji(sev)}} {{sev}}
+              </label>
+            </div>
+            <button class="btn btn-primary mb-4" @click="saveSeverityFilters"><i class="bi bi-check-lg"></i> Salvar Severidades</button>
+
+            <!-- TAG conditions per severity -->
+            <div v-if="destSeverityFilters.length > 0">
+              <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--text2)">Condições de TAG por Severidade (opcional)</div>
+              <div class="notice notice-yellow mb-3">Se uma condição de TAG estiver definida para uma severidade, o alerta só é entregue se tiver a TAG correspondente. Sem condição = todos os alertas daquela severidade passam.</div>
+              <table style="width:100%;margin-bottom:12px">
+                <thead><tr><th style="padding:8px">Severidade</th><th style="padding:8px">TAG Nome</th><th style="padding:8px">TAG Valor</th><th style="padding:8px">Ação</th></tr></thead>
+                <tbody>
+                  <tr v-for="cond in destSevConditions" :key="cond.id" style="border-bottom:1px solid var(--border)">
+                    <td style="padding:8px"><span :class="'badge badge-'+cond.severity">{{sevEmoji(cond.severity)}} {{cond.severity}}</span></td>
+                    <td style="padding:8px"><span class="tag-chip" style="color:var(--cyan)">{{cond.tag_name}}</span></td>
+                    <td style="padding:8px"><span class="mono" style="font-size:12px">{{cond.tag_value||'*'}}</span></td>
+                    <td style="padding:8px"><button class="btn btn-danger btn-sm" @click="deleteSevCondition(cond)"><i class="bi bi-trash"></i></button></td>
+                  </tr>
+                  <tr v-if="!destSevConditions.length"><td colspan="4" class="text-center text-muted" style="padding:12px">Sem condições — todas as severidades selecionadas passam livremente</td></tr>
+                </tbody>
+              </table>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end" class="rule-card">
+                <div class="form-group" style="margin:0">
+                  <label class="form-label">Severidade</label>
+                  <select v-model="newSevCondition.severity" class="form-control form-select" style="width:150px">
+                    <option v-for="s in destSeverityFilters" :key="s" :value="s">{{sevEmoji(s)}} {{s}}</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin:0">
+                  <label class="form-label">TAG Nome</label>
+                  <select v-if="globalTags.length" v-model="newSevCondition.tag_name" class="form-control form-select" style="width:160px">
+                    <option value="__custom__">✏️ Digitar...</option>
+                    <option disabled>──────────</option>
+                    <option value="">— qualquer —</option>
+                    <option v-for="t in globalTags" :key="t.id" :value="t.name">{{t.name}}</option>
+                  </select>
+                  <input v-else v-model="newSevCondition.tag_name" class="form-control" style="width:160px" placeholder="nome da TAG">
+                </div>
+                <div class="form-group" style="margin:0">
+                  <label class="form-label">TAG Valor</label>
+                  <input v-model="newSevCondition.tag_value" class="form-control" style="width:140px" placeholder="vazio = qualquer">
+                </div>
+                <button class="btn btn-primary" @click="addSevCondition" style="margin-bottom:16px"><i class="bi bi-plus-lg"></i> Adicionar</button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Tag filters (Rule 3) -->
@@ -684,13 +783,11 @@ tr:last-child td{border-bottom:none}tr:hover td{background:rgba(255,255,255,.02)
         <!-- Mentions tab -->
         <div v-if="destDetailTab==='mentions'">
           <div class="notice mb-3">
-            Configure quais pessoas serão mencionadas neste destino com base no valor da TAG do alerta.<br>
-            O sistema busca o valor da TAG no alerta (ex: <code class="code">RESPONSAVEL=joao.silva</code>)
-            e menciona o número correspondente cadastrado em <strong>TAGs → Menções</strong> — desde que o número seja participante do grupo.<br>
-            Use esta aba para filtrar: se configurado, apenas alertas cujo valor da TAG bata com os cadastrados abaixo serão processados para menção.
+            Define quem será mencionado nos alertas deste destino. A menção é resolvida comparando as TAGs do alerta com os mapeamentos em <strong>TAGs → Menções</strong>.<br>
+            <strong>Sem filtros abaixo:</strong> todas as pessoas mapeadas para as TAGs presentes no alerta são mencionadas.<br>
+            <strong>Com filtros:</strong> apenas as pessoas selecionadas são mencionadas — o alerta ainda é entregue mesmo que nenhum filtro bata.
           </div>
 
-          <!-- Mapping reference table -->
           <div class="card mb-3">
             <div class="card-header"><div class="card-title"><i class="bi bi-person-check"></i> Mapeamentos cadastrados (TAGs → Menções)</div></div>
             <div class="table-wrap">
@@ -702,44 +799,37 @@ tr:last-child td{border-bottom:none}tr:hover td{background:rgba(255,255,255,.02)
                     <td>
                       <span v-for="v in m.tag_value.split(',')" :key="v"
                         class="tag-chip" style="margin-right:4px;cursor:pointer"
-                        @click="addMentionFilter(m.tag_name, v.trim())"
-                        title="Clique para adicionar como filtro neste destino">
-                        {{v.trim()}}
-                        <i class="bi bi-plus-circle" style="font-size:10px;color:var(--cyan)"></i>
+                        @click="quickAddMentionFilter(m.tag_name, v.trim())"
+                        title="Clique para adicionar filtro de menção">
+                        {{v.trim()}} <i class="bi bi-plus-circle" style="font-size:10px;color:var(--cyan)"></i>
                       </span>
                     </td>
                     <td class="mono" style="font-size:11px">{{fmtPhone(m.phone_number)}}</td>
                     <td style="color:var(--text2)">{{m.description||'—'}}</td>
                   </tr>
-                  <tr v-if="!mappings.length"><td colspan="4" class="text-center text-muted" style="padding:20px">Nenhum mapeamento cadastrado em TAGs → Menções</td></tr>
+                  <tr v-if="!mappings.length"><td colspan="4" class="text-center text-muted" style="padding:20px">Nenhum mapeamento em TAGs → Menções</td></tr>
                 </tbody>
               </table>
             </div>
           </div>
 
-          <!-- Active mention filters for this destination -->
           <div class="card">
-            <div class="card-header">
-              <div class="card-title"><i class="bi bi-funnel"></i> Filtros de menção ativos neste destino</div>
-            </div>
+            <div class="card-header"><div class="card-title"><i class="bi bi-funnel"></i> Filtros de menção ativos</div></div>
             <div class="card-body">
-              <div class="notice notice-yellow mb-3">Se nenhum filtro for adicionado aqui, <strong>todas as menções mapeadas</strong> serão tentadas para cada alerta. Adicione filtros para restringir quais pessoas são mencionadas neste destino.</div>
-              <div v-if="mentionTagFilters.length" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
-                <div v-for="tf in mentionTagFilters" :key="tf.id"
+              <div class="notice notice-yellow mb-3" v-if="!destMentionFilters.length">Sem filtros — <strong>todas as menções mapeadas</strong> serão tentadas para cada alerta.</div>
+              <div v-if="destMentionFilters.length" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+                <div v-for="mf in destMentionFilters" :key="mf.id"
                   style="display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 10px">
-                  <span style="color:var(--cyan);font-family:var(--mono);font-size:12px">{{tf.tag_name}}</span>
+                  <span style="color:var(--cyan);font-family:var(--mono);font-size:12px">{{mf.tag_name}}</span>
                   <span style="color:var(--text3)">:</span>
-                  <span style="font-family:var(--mono);font-size:12px">{{tf.tag_value||'*'}}</span>
-                  <button class="btn btn-danger btn-sm" style="padding:2px 6px" @click="deleteTagFilter(tf)"><i class="bi bi-x"></i></button>
+                  <span style="font-family:var(--mono);font-size:12px">{{mf.tag_value||'*'}}</span>
+                  <button class="btn btn-danger btn-sm" style="padding:2px 6px" @click="deleteMentionFilter(mf)"><i class="bi bi-x"></i></button>
                 </div>
               </div>
-              <div v-else class="text-muted mb-3">Nenhum filtro — todas as menções mapeadas serão aplicadas.</div>
-
-              <!-- Quick add by selecting from mappings -->
               <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
                 <div class="form-group" style="margin:0;min-width:160px">
                   <label class="form-label">TAG</label>
-                  <select v-model="newMentionFilter.tag_name" class="form-control form-select" @change="newMentionFilter.tag_value=''">
+                  <select v-model="newMentionFilter.tag_name" class="form-control form-select">
                     <option value="__custom__">✏️ Digitar manualmente...</option>
                     <option disabled>──────────────</option>
                     <option value="">— qualquer —</option>
@@ -765,7 +855,6 @@ tr:last-child td{border-bottom:none}tr:hover td{background:rgba(255,255,255,.02)
             </div>
           </div>
         </div>
-
         <!-- Schedules (Rule 2) -->
         <div v-if="destDetailTab==='schedules'">
           <div class="notice mb-3">
@@ -927,7 +1016,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:rgba(255,255,255,.02)
       <div class="modal-header"><div class="modal-title">{{userForm.id?'Editar':'Novo'}} Usuário</div><button class="btn-close" @click="showUserModal=false"><i class="bi bi-x-lg"></i></button></div>
       <div class="modal-body">
         <div class="form-group"><label class="form-label">Usuário *</label><input v-model="userForm.username" class="form-control"></div>
-        <div class="form-group" v-if="!userForm.id"><label class="form-label">Senha *</label><input v-model="userForm.password" type="password" class="form-control"></div>
+        <div class="form-group" v-if="!userForm.id"><label class="form-label">Senha *</label><input v-model="userForm.password" type="password" class="form-control"><div class="text-muted mt-1">Mínimo 8 caracteres com letras e números</div></div>
         <div class="form-group"><label class="form-label">Perfil</label><select v-model="userForm.role" class="form-control form-select"><option value="operator">Operador</option><option value="admin">Administrador</option></select></div>
         <div class="form-group" v-if="userForm.id"><label class="form-label" style="display:flex;align-items:center;gap:8px">Ativo<label class="toggle"><input type="checkbox" v-model="userForm.active"><span class="toggle-track"></span></label></label></div>
       </div>
@@ -961,6 +1050,10 @@ async function api(method,path,body){const opts={method,headers:getHeaders()};if
 createApp({
   data(){return{
     auth:{token:localStorage.getItem(TOKEN_KEY),user:null},
+    serverTz:'UTC',
+    timezones:[],
+    ntpSyncing:false,
+    ntpResult:null,
     loginForm:{username:'admin',password:''},loginError:'',loading:{},
     page:'dashboard',pageTitle:'Dashboard',now:'',
     toast:{show:false,message:'',type:'success'},location:window.location,
@@ -968,10 +1061,11 @@ createApp({
     queueStats:{},queueItems:[],queueFilter:{status:'pending',destination_id:''},
     users:[],logs:[],logFilter:{severity:'',status:''},settings:{},settingsForm:{},
     showSessionModal:false,sessionForm:{id:null,name:'',api_url:'',api_key:'',session_name:'default'},
-    showDestModal:false,destForm:{id:null,name:'',type:'group',chat_id:'',waha_session_id:null,active:true,notify_all_enabled:false},
+    showDestModal:false,destForm:{id:null,name:'',type:'group',chat_id:'',waha_session_id:null,active:true,notify_all_enabled:false,severity_mode:'whitelist'},
     showDestDetailModal:false,selectedDest:null,destDetailTab:'severity',
     newMentionFilter:{tag_name:'',tag_value:'',tag_name_custom:'',tag_value_custom:''},
-    destSeverityFilters:[],destTagFilters:[],destSchedules:[],
+    destSeverityFilters:[],destSevConditions:[],destTagFilters:[],destMentionFilters:[],destSchedules:[],
+    newSevCondition:{severity:'disaster',tag_name:'',tag_value:''},
     newTagFilter:{tag_name:'',tag_value:'',negate_severity:false,tag_name_custom:'',tag_value_custom:''},
     newSchedule:{severity:'warning',days_of_week:'1,2,3,4,5',start_time:'08:00',end_time:'18:00',action:'hold',tag_filter_name:'',tag_filter_value:'',tag_filter_negate:false},
     showMappingModal:false,mappingForm:{id:null,tag_name:'',tag_value:'',phone_number:'',description:''},
@@ -984,6 +1078,7 @@ createApp({
   }},
   mounted(){
     this.updateNow();this._intervals.push(setInterval(()=>this.updateNow(),30000));
+    fetch('/api/server-info').then(r=>r.json()).then(d=>{ this.serverTz=d.timezone||'UTC'; if(!this.settingsForm.timezone) this.settingsForm.timezone=d.timezone||'UTC'; }).catch(()=>{});
     if(this.auth.token){this.loadUser();this.init();}
     this._intervals.push(setInterval(()=>{if(this.auth.token)this.loadQueueStats();},10000));
   },
@@ -993,24 +1088,31 @@ createApp({
     mentionTagNames(){
       return [...new Set((this.mappings||[]).map(m=>m.tag_name).filter(Boolean))].sort();
     },
-    /** Tag filters of this destination that match a mapped tag name */
+    /** Mention filters from dedicated table */
     mentionTagFilters(){
-      const mapped = new Set((this.mappings||[]).map(m=>(m.tag_name||'')).filter(Boolean).map(x=>x.toLowerCase()));
-      return (this.destTagFilters||[]).filter(tf => mapped.has((tf.tag_name||'').toLowerCase()));
+      return this.destMentionFilters||[];
     },
   },
   methods:{
-    updateNow(){this.now=new Date().toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',dateStyle:'short',timeStyle:'short'})},
+    updateNow(){this.now=new Date().toLocaleString(undefined,{timeZone:this.serverTz,dateStyle:'short',timeStyle:'short'})},
     showToast(message,type='success'){this.toast={show:true,message,type};setTimeout(()=>this.toast.show=false,3500)},
     async login(){this.loginError='';this.loading.login=true;try{const data=await api('POST','/api/auth/login',this.loginForm);localStorage.setItem(TOKEN_KEY,data.token);this.auth.token=data.token;this.auth.user=data.user;await this.init();}catch(e){this.loginError=e.message;}finally{this.loading.login=false;}},
     logout(){localStorage.removeItem(TOKEN_KEY);this.auth={token:null,user:null};},
     async loadUser(){try{this.auth.user=await api('GET','/api/auth/me');}catch{this.logout();}},
     async init(){await Promise.all([this.loadUser(),this.loadDashboard(),this.loadSessions(),this.loadDestinations(),this.loadMappings(),this.loadGlobalTags(),this.loadQueueStats()]);},
-    nav(p){const titles={dashboard:'Dashboard',sessions:'Sessões WAHA',destinations:'Destinos',queue:'Fila de Alertas',mappings:'TAGs → Menções',globalTags:'Cadastro de TAGs',users:'Usuários',logs:'Histórico',settings:'Configurações',password:'Minha Conta'};this.page=p;this.pageTitle=titles[p]||p;if(p==='queue'){this.loadQueue();this.loadQueueStats();}if(p==='logs')this.loadLogs();if(p==='users')this.loadUsers();if(p==='settings')this.loadSettings();if(p==='dashboard')this.loadDashboard();},
+    nav(p){const titles={dashboard:'Dashboard',sessions:'Sessões WAHA',destinations:'Destinos',queue:'Fila de Alertas',mappings:'TAGs → Menções',globalTags:'Cadastro de TAGs',users:'Usuários',logs:'Histórico',settings:'Configurações',password:'Minha Conta'};this.page=p;this.pageTitle=titles[p]||p;if(p==='queue'){this.loadQueue();this.loadQueueStats();}if(p==='logs')this.loadLogs();if(p==='users')this.loadUsers();if(p==='settings'){this.loadSettings();this.loadTimezones();}if(p==='dashboard')this.loadDashboard();},
     async loadDashboard(){try{this.dashboard=await api('GET','/api/dashboard');}catch{}},
     // Sessions
     async loadSessions(){try{this.sessions=await api('GET','/api/waha-sessions');}catch{}},
-    openSessionModal(s){this.sessionForm=s?{...s}:{id:null,name:'',api_url:'',api_key:'',session_name:'default'};this.showSessionModal=true;},
+    openSessionModal(s){
+      if(s){
+        // Don't pre-fill API key — show placeholder, only send if user types a new one
+        this.sessionForm={...s, api_key:'', api_key_set: s.api_key_set, api_key_placeholder: s.api_key_set ? '••••••••' : ''};
+      } else {
+        this.sessionForm={id:null,name:'',api_url:'',api_key:'',session_name:'default',api_key_set:false,api_key_placeholder:''};
+      }
+      this.showSessionModal=true;
+    },
     async saveSession(){try{if(this.sessionForm.id){await api('PUT',`/api/waha-sessions/${this.sessionForm.id}`,this.sessionForm);}else{await api('POST','/api/waha-sessions',this.sessionForm);}this.showSessionModal=false;await this.loadSessions();this.showToast('Sessão salva!');}catch(e){this.showToast(e.message,'error');}},
     async deleteSession(s){if(!confirm(`Remover "${s.name}"?`))return;try{await api('DELETE',`/api/waha-sessions/${s.id}`);await this.loadSessions();}catch(e){this.showToast(e.message,'error');}},
     async startSession(s){try{await api('POST',`/api/waha-sessions/${s.id}/start`);await this.loadSessions();this.showToast('Iniciando...');}catch(e){this.showToast(e.message,'error');}},
@@ -1018,18 +1120,21 @@ createApp({
     async checkSessionStatus(s){try{const r=await api('GET',`/api/waha-sessions/${s.id}/status`);await this.loadSessions();this.showToast(`Status: ${r.status||'?'}`);}catch(e){this.showToast(e.message,'error');}},
     // Destinations
     async loadDestinations(){try{this.destinations=await api('GET','/api/destinations');}catch{}},
-    openDestModal(d){this.destForm=d?{...d,active:!!d.active,notify_all_enabled:!!d.notify_all_enabled}:{id:null,name:'',type:'group',chat_id:'',waha_session_id:null,active:true,notify_all_enabled:false};this.showDestModal=true;},
+    openDestModal(d){this.destForm=d?{...d,active:!!d.active,notify_all_enabled:!!d.notify_all_enabled,severity_mode:d.severity_mode||'whitelist'}:{id:null,name:'',type:'group',chat_id:'',waha_session_id:null,active:true,notify_all_enabled:false,severity_mode:'whitelist'};this.showDestModal=true;},
     async saveDest(){try{if(this.destForm.id){await api('PUT',`/api/destinations/${this.destForm.id}`,this.destForm);}else{await api('POST','/api/destinations',this.destForm);}this.showDestModal=false;await this.loadDestinations();this.showToast('Destino salvo!');}catch(e){this.showToast(e.message,'error');}},
     async toggleDest(d){try{await api('PUT',`/api/destinations/${d.id}`,{active:!d.active});await this.loadDestinations();}catch(e){this.showToast(e.message,'error');}},
     async deleteDest(d){if(!confirm(`Remover "${d.name}"?`))return;try{await api('DELETE',`/api/destinations/${d.id}`);await this.loadDestinations();}catch(e){this.showToast(e.message,'error');}},
     async openDestDetail(d){
       this.selectedDest=d;this.destDetailTab='severity';
       this.destSeverityFilters=[...(d.severity_filters||[])];
+      this.destSevConditions=[...(d.sev_conditions||[])];
       this.destTagFilters=[...(d.tag_filters||[])];
+      this.destMentionFilters=[...(d.mention_filters||[])];
       this.destSchedules=[...(d.schedules||[])];
       this.newTagFilter={tag_name:'',tag_value:'',negate_severity:false,tag_name_custom:'',tag_value_custom:''};
+      this.newSevCondition={severity:'disaster',tag_name:'',tag_value:''};
       this.newSchedule={severity:'warning',days_of_week:'1,2,3,4,5',start_time:'08:00',end_time:'18:00',action:'hold',tag_filter_name:'',tag_filter_value:'',tag_filter_negate:false};
-      // Ensure mappings and globalTags are loaded for dropdowns
+      this.newMentionFilter={tag_name:'',tag_value:'',tag_name_custom:'',tag_value_custom:''};
       if(!this.mappings.length) await this.loadMappings();
       if(!this.globalTags.length) await this.loadGlobalTags();
       this.showDestDetailModal=true;
@@ -1050,7 +1155,7 @@ createApp({
     async deleteSchedule(rule){try{await api('DELETE',`/api/destinations/${this.selectedDest.id}/schedules/${rule.id}`);this.destSchedules=this.destSchedules.filter(r=>r.id!==rule.id);await this.loadDestinations();}catch(e){this.showToast(e.message,'error');}},
     toggleRuleDay(rule,idx){const days=rule.days_of_week.split(',').map(Number);const i=days.indexOf(idx);if(i>=0)days.splice(i,1);else days.push(idx);rule.days_of_week=days.sort((a,b)=>a-b).join(',');this.updateSchedule(rule);},
     toggleNewDay(idx){const days=this.newSchedule.days_of_week?this.newSchedule.days_of_week.split(',').map(Number):[];const i=days.indexOf(idx);if(i>=0)days.splice(i,1);else days.push(idx);this.newSchedule.days_of_week=days.sort((a,b)=>a-b).join(',');},
-    // Mention tab actions
+    // Mention tab actions — use destination_mention_filters (not tag_filters)
     async addMentionFilterForm(){
       const tagName = this.newMentionFilter.tag_name==='__custom__'
         ? (this.newMentionFilter.tag_name_custom||'').trim()
@@ -1059,27 +1164,51 @@ createApp({
       const tagValue = this.newMentionFilter.tag_value==='__custom_val__'
         ? (this.newMentionFilter.tag_value_custom||'').trim()
         : (this.newMentionFilter.tag_value||'').trim();
+      const already = this.destMentionFilters.some(mf =>
+        mf.tag_name.toLowerCase()===tagName.toLowerCase() && mf.tag_value===tagValue);
+      if(already){this.showToast('Filtro já existe','error');return;}
       try{
-        const r = await api('POST',`/api/destinations/${this.selectedDest.id}/tag-filters`,
-          {tag_name:tagName, tag_value:tagValue, negate_severity:0});
-        this.destTagFilters.push(r);
+        const r = await api('POST',`/api/destinations/${this.selectedDest.id}/mention-filters`,{tag_name:tagName,tag_value:tagValue});
+        this.destMentionFilters.push(r);
         this.newMentionFilter={tag_name:'',tag_value:'',tag_name_custom:'',tag_value_custom:''};
         await this.loadDestinations();
         this.showToast('Filtro de menção adicionado!');
       }catch(e){this.showToast(e.message,'error');}
     },
-    async addMentionFilter(tagName, tagValue){
-      // Quick-add by clicking a chip in the mappings reference table
-      const already = this.destTagFilters.some(tf =>
-        tf.tag_name.toLowerCase()===tagName.toLowerCase() && tf.tag_value===tagValue
-      );
+    async quickAddMentionFilter(tagName, tagValue){
+      const already = this.destMentionFilters.some(mf =>
+        mf.tag_name.toLowerCase()===tagName.toLowerCase() && mf.tag_value===tagValue);
       if(already){this.showToast('Filtro já existe','error');return;}
       try{
-        const r = await api('POST',`/api/destinations/${this.selectedDest.id}/tag-filters`,
-          {tag_name:tagName, tag_value:tagValue, negate_severity:0});
-        this.destTagFilters.push(r);
+        const r = await api('POST',`/api/destinations/${this.selectedDest.id}/mention-filters`,{tag_name:tagName,tag_value:tagValue});
+        this.destMentionFilters.push(r);
         await this.loadDestinations();
         this.showToast(`Menção de ${tagValue} adicionada!`);
+      }catch(e){this.showToast(e.message,'error');}
+    },
+    async deleteMentionFilter(mf){
+      try{
+        await api('DELETE',`/api/destinations/${this.selectedDest.id}/mention-filters/${mf.id}`);
+        this.destMentionFilters=this.destMentionFilters.filter(f=>f.id!==mf.id);
+        await this.loadDestinations();
+      }catch(e){this.showToast(e.message,'error');}
+    },
+    // Severity conditions
+    async addSevCondition(){
+      const tn = this.newSevCondition.tag_name==='__custom__' ? '' : (this.newSevCondition.tag_name||'');
+      if(!this.newSevCondition.severity) return;
+      try{
+        const r = await api('POST',`/api/destinations/${this.selectedDest.id}/severity-conditions`,
+          {...this.newSevCondition, tag_name:tn});
+        this.destSevConditions.push(r);
+        this.newSevCondition={severity:'disaster',tag_name:'',tag_value:''};
+        this.showToast('Condição adicionada!');
+      }catch(e){this.showToast(e.message,'error');}
+    },
+    async deleteSevCondition(cond){
+      try{
+        await api('DELETE',`/api/destinations/${this.selectedDest.id}/severity-conditions/${cond.id}`);
+        this.destSevConditions=this.destSevConditions.filter(c=>c.id!==cond.id);
       }catch(e){this.showToast(e.message,'error');}
     },
     // Mappings
@@ -1121,7 +1250,14 @@ createApp({
     async loadLogs(){try{const params=new URLSearchParams();if(this.logFilter.severity)params.set('severity',this.logFilter.severity);if(this.logFilter.status)params.set('status',this.logFilter.status);params.set('limit','100');const r=await api('GET',`/api/logs?${params}`);this.logs=r.items||r;}catch{}},
     // Settings
     async loadSettings(){try{this.settings=await api('GET','/api/settings');this.settingsForm={...this.settings};}catch{}},
-    async saveSettings(){try{await api('PUT','/api/settings',this.settingsForm);this.showToast('Configurações salvas!');}catch(e){this.showToast(e.message,'error');}},
+    async saveSettings(){
+      try{
+        await api('PUT','/api/settings',this.settingsForm);
+        // Update displayed timezone immediately
+        if(this.settingsForm.timezone) this.serverTz = this.settingsForm.timezone;
+        this.showToast('Configurações salvas!');
+      }catch(e){this.showToast(e.message,'error');}
+    },
     async runCleanup(){try{const r=await api('POST','/api/settings/cleanup-now');this.showToast(`Limpeza: ${r.byAge+r.byCount} logs, ${r.queueTrimmed} fila removidos.`);}catch(e){this.showToast(e.message,'error');}},
     /** Returns [{value, desc}] for a tag name from tag_phone_mappings */
     mentionValuesFor(tagName){
@@ -1176,8 +1312,42 @@ createApp({
       }
       return Array.from(vals).sort();
     },
+    // Timezone / NTP
+    async loadTimezones(){
+      try{ this.timezones = await api('GET','/api/timezones'); }catch{}
+    },
+    async syncNtp(){
+      this.ntpSyncing = true;
+      this.ntpResult = null;
+      try{
+        const r = await api('POST','/api/settings/ntp-sync',{
+          ntp_server: this.settingsForm.ntp_server || 'pool.ntp.org',
+          timezone: this.settingsForm.timezone
+        });
+        this.ntpResult = r;
+        this.settingsForm.timezone = r.timezone;
+        this.serverTz = r.timezone;
+        this.showToast('Fuso horário sincronizado: ' + r.timezone);
+      }catch(e){
+        this.ntpResult = { error: e.message };
+        this.showToast(e.message, 'error');
+      }finally{
+        this.ntpSyncing = false;
+      }
+    },
+    fmtNow(tz){
+      try{
+        return new Date().toLocaleString(undefined,{timeZone:tz||'UTC',dateStyle:'short',timeStyle:'medium'});
+      }catch{ return '—'; }
+    },
     // Utils
-    fmtDate(d){if(!d)return'—';return new Date(d).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',dateStyle:'short',timeStyle:'short'});},
+    fmtDate(d){
+      if(!d) return '—';
+      // SQLite stores UTC without 'Z' — append it so JS parses as UTC, not local
+      const utcStr = String(d).replace(' ','T').replace(/Z?$/, 'Z');
+      try { return new Date(utcStr).toLocaleString(undefined,{timeZone:this.serverTz,dateStyle:'short',timeStyle:'short'}); }
+      catch { return new Date(d).toLocaleString(); }
+    },
     fmtPhone(p){if(!p)return'—';const s=String(p).replace(/\D/g,'');if(s.length>=12)return`+${s.slice(0,2)} (${s.slice(2,4)}) ${s.slice(4,9)}-${s.slice(9)}`;if(s.length===11)return`(${s.slice(0,2)}) ${s.slice(2,7)}-${s.slice(7)}`;return s;},
     sevEmoji(sev){return{not_classified:'⚪',information:'ℹ️',warning:'⚠️',average:'🟠',high:'🔴',disaster:'💥'}[sev]||'';},
   }

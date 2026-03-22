@@ -48,6 +48,8 @@ function initDB() {
       waha_session_id INTEGER REFERENCES waha_sessions(id) ON DELETE SET NULL,
       active INTEGER DEFAULT 1,
       notify_all_enabled INTEGER DEFAULT 0,
+      severity_mode TEXT DEFAULT 'whitelist',  -- whitelist | bypass (ignore sev, route by tags only)
+
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -63,6 +65,23 @@ function initDB() {
       tag_name TEXT NOT NULL,
       tag_value TEXT DEFAULT '',
       negate_severity INTEGER DEFAULT 0
+    );
+
+    -- Mention filters: who gets mentioned — does NOT affect routing
+    CREATE TABLE IF NOT EXISTS destination_mention_filters (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      destination_id INTEGER NOT NULL REFERENCES destinations(id) ON DELETE CASCADE,
+      tag_name TEXT NOT NULL,
+      tag_value TEXT DEFAULT ''
+    );
+
+    -- Severity conditions: optional TAG per severity level
+    CREATE TABLE IF NOT EXISTS destination_severity_conditions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      destination_id INTEGER NOT NULL REFERENCES destinations(id) ON DELETE CASCADE,
+      severity TEXT NOT NULL,
+      tag_name TEXT DEFAULT '',
+      tag_value TEXT DEFAULT ''
     );
 
     CREATE TABLE IF NOT EXISTS tag_phone_mappings (
@@ -130,6 +149,7 @@ function initDB() {
   // Migrations for existing installations
   const migrations = [
     `ALTER TABLE destinations ADD COLUMN notify_all_enabled INTEGER DEFAULT 0`,
+    `ALTER TABLE destinations ADD COLUMN severity_mode TEXT DEFAULT 'whitelist'`,
     `ALTER TABLE destination_tag_filters ADD COLUMN negate_severity INTEGER DEFAULT 0`,
     `ALTER TABLE schedule_rules ADD COLUMN tag_filter_name TEXT DEFAULT ''`,
     `ALTER TABLE schedule_rules ADD COLUMN tag_filter_value TEXT DEFAULT ''`,
@@ -148,6 +168,8 @@ function initDB() {
     max_retries: '3',
     dedup_window_minutes: '5',
     webhook_token: process.env.WEBHOOK_TOKEN || '',
+    timezone: 'America/Sao_Paulo',  // Fuso horario exibido no painel e nas mensagens
+    ntp_server: 'pool.ntp.org',      // Servidor NTP para sincronizacao
     log_max_rows: '50000',
     log_retention_days: '30',
     queue_max_sent_rows: '10000',
